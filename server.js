@@ -6,15 +6,10 @@ require('dotenv').config()
 const port = process.env.SERVER_PORT || process.env.PORT || 8000
 const server = hapi.server({ port })
 
-server.route({
-  method:'GET',
-  path:'/',
-  handler: (request, h) => {
-    return { status: 'ok' }
-  }
-});
+const routes = require('./lib/routes')
+server.route(routes)
 
-(async () => {
+;(async () => {
   try {
     await server.start();
   }
@@ -23,5 +18,5 @@ server.route({
     process.exit(1);
   }
 
-  console.log('Server running at:', server.info.uri);
+  console.log('Server running at:', server.info.uri)
 })()
