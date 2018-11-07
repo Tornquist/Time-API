@@ -6,6 +6,8 @@ require('dotenv').config()
 const port = process.env.SERVER_PORT || process.env.PORT || 8000
 const server = hapi.server({ port })
 
+require('./lib/sdk').initialize()
+
 const routes = require('./lib/routes')
 server.route(routes)
 
