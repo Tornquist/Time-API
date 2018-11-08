@@ -1,17 +1,38 @@
 'use strict';
 
 const hapi = require('hapi')
+const inert = require('inert');
+const vision = require('vision');
+const hapiSwagger = require('hapi-swagger');
+const apiPackage = require('./package');
+
 require('dotenv').config()
-
-const port = process.env.SERVER_PORT || process.env.PORT || 8000
-const server = hapi.server({ port })
-
 require('./lib/sdk').initialize()
-
 const routes = require('./lib/routes')
-server.route(routes)
 
 ;(async () => {
+  const port = process.env.SERVER_PORT || process.env.PORT || 8000
+  const server = await new hapi.server({ port })
+
+  server.route(routes)
+
+  const swaggerOptions = {
+    info: {
+      title: 'Time API Documentation',
+      version: apiPackage.version
+    },
+    documentationPath: '/docs'
+  }
+
+  await server.register([
+    inert,
+    vision,
+    {
+      plugin: hapiSwagger,
+      options: swaggerOptions
+    }
+  ])
+
   try {
     await server.start();
   }
