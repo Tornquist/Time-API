@@ -10,7 +10,7 @@ require('dotenv').config()
 require('./lib/sdk').initialize()
 const routes = require('./lib/routes')
 
-;(async () => {
+module.exports = (async () => {
   const port = process.env.SERVER_PORT || process.env.PORT || 8000
   const server = await new hapi.server({ port })
 
@@ -33,13 +33,7 @@ const routes = require('./lib/routes')
     }
   ])
 
-  try {
-    await server.start();
-  }
-  catch (err) {
-    console.log(err);
-    process.exit(1);
-  }
+  await server.start();
 
-  console.log('Server running at:', server.info.uri)
+  return server
 })()

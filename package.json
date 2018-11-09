@@ -2,8 +2,9 @@
   "name": "time-api",
   "version": "0.0.0",
   "description": "Central Time Server",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
+    "test": "nyc --reporter=html --reporter=text mocha test/test-* --exit",
     "watch": "nodemon"
   },
   "repository": {
@@ -27,6 +28,10 @@
     "vision": "^5.4.3"
   },
   "devDependencies": {
-    "nodemon": "^1.18.6"
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.6",
+    "nyc": "^13.1.0"
   }
 }
