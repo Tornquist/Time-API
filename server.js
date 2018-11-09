@@ -33,6 +33,9 @@ module.exports = (async () => {
     }
   ])
 
+  let oauthSchema = require('./lib/auth')
+  await oauthSchema.connect(server)
+
   await server.start();
 
   return server

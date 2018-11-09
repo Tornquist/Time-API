@@ -7,6 +7,7 @@ exports.path = '/'
 exports.get = {
   description: `Status page.`,
   notes: 'This page will return the API status and version.',
+  auth: false,
   plugins: {
     'hapi-swagger': {
       responses: {
