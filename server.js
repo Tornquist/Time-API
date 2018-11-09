@@ -14,6 +14,9 @@ module.exports = (async () => {
   const port = process.env.SERVER_PORT || process.env.PORT || 8000
   const server = await new hapi.server({ port })
 
+  let oauthSchema = require('./lib/auth')
+  await oauthSchema.connect(server)
+
   server.route(routes)
 
   const swaggerOptions = {
@@ -32,9 +35,6 @@ module.exports = (async () => {
       options: swaggerOptions
     }
   ])
-
-  let oauthSchema = require('./lib/auth')
-  await oauthSchema.connect(server)
 
   await server.start();
 
