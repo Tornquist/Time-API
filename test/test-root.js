@@ -7,7 +7,6 @@ const should = chai.should();
 describe('Root', function() {
   let server;
 
-  let statusCode, payload
   before(async () => {
     server = await require(process.env.PWD+'/server')
   })
