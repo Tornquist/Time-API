@@ -105,12 +105,19 @@ describe('Auth', function() {
         response.payload.message.should.eq('Invalid request payload input')
       })
 
-      it('is rejected if the content-type is not form urlencoded', async () => {
+      it('is rejected if the content-type is missing', async () => {
         let response = await authRequest({}, { 'Content-Type': null })
 
         response.statusCode.should.eq(400)
         response.payload.message.should.eq('Invalid request payload JSON format')
       })
+
+      it('is rejected if the content-type is not form urlencoded')/*, async () => {
+        let response = await authRequest({}, { 'Content-Type': 'JPG' })
+
+        response.statusCode.should.eq(400)
+        response.payload.message.should.eq('Invalid content-type header')
+      })*/
 
       it('is rejected if the password is incorrect', async () => {
         let response = await authRequest({ password: 'Super wrong pass'}, {})
@@ -213,6 +220,57 @@ describe('Auth', function() {
         response.payload.token.should.not.eq(validToken.payload.token)
         response.payload.refresh.should.not.eq(validToken.payload.refresh)
       })
+    })
+  })
+
+  describe('Using activation tokens with secure endpoints', () => {
+    let validToken;
+    before(function() {
+      this.timeout(5000)
+      return authRequest()
+      .then(_response => {
+        validToken = _response
+      })
+    })
+
+    let genericRequest = async (headers = {}) => {
+      let response = await server.inject({
+        method: 'GET',
+        url: '/account/9',
+        headers: headers
+      })
+
+      return response
+    }
+
+    it('Rejects access when no authentication header is present', async () => {
+      let response = await genericRequest()
+
+      response.statusCode.should.eq(401)
+    })
+
+    it('Rejects access when an invalid header is present', async () => {
+      let response = await genericRequest({
+        'Authorization': 'Does not match regex at all'
+      })
+
+      response.statusCode.should.eq(401)
+    })
+
+    it('Rejects access when an invalid token', async () => {
+      let response = await genericRequest({
+        'Authorization': 'Bearer madeUpToken'
+      })
+
+      response.statusCode.should.eq(401)
+    })
+
+    it('Accepts with a valid authentication header', async () => {
+      let response = await genericRequest({
+        'Authorization': `Bearer ${validToken.payload.token}`
+      })
+
+      response.statusCode.should.not.eq(401)
     })
   })
 
