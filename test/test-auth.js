@@ -23,7 +23,7 @@ describe('Auth', function() {
   let authRequest = async (queryOverride = {}, headerOverride = {}) => {
     let query = {
       grant_type: 'password',
-      email: user.email,
+      username: user.email,
       password: user.password
     }
 
@@ -83,8 +83,8 @@ describe('Auth', function() {
         response.payload.message.should.eq('Invalid request payload input')
       })
 
-      it('is rejected if email is missing', async () => {
-        let response = await authRequest({ email: null }, {})
+      it('is rejected if username is missing', async () => {
+        let response = await authRequest({ username: null }, {})
 
         response.statusCode.should.eq(400)
         response.payload.message.should.eq('Invalid request payload input')
