@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "nyc --reporter=html --reporter=text mocha test/test-* --exit",
-    "watch": "nodemon"
+    "watch": "nodemon",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "coverage:lcov": "nyc report --reporter=lcov"
   },
   "repository": {
     "type": "git",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.0.2",
     "mocha": "^5.2.0",
     "nodemon": "^1.18.6",
     "nyc": "^13.1.0",
