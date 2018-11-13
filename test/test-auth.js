@@ -112,12 +112,26 @@ describe('Auth', function() {
         response.payload.message.should.eq('Invalid request payload JSON format')
       })
 
-      it('is rejected if the content-type is not form urlencoded')/*, async () => {
-        let response = await authRequest({}, { 'Content-Type': 'JPG' })
+      it('is rejected if the content-type is not form urlencoded', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/oauth/token',
+          payload: {
+            grant_type: 'password',
+            username: user.email,
+            password: user.password
+          },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        response.payload = JSON.parse(response.payload)
 
         response.statusCode.should.eq(400)
-        response.payload.message.should.eq('Invalid content-type header')
-      })*/
+        response.payload.message.should.eq(
+          'Unsupported mime type. [application/x-www-form-urlencoded] Supported'
+        )
+      })
 
       it('is rejected if the password is incorrect', async () => {
         let response = await authRequest({ password: 'Super wrong pass'}, {})
