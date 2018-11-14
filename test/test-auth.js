@@ -1,8 +1,8 @@
 require('dotenv').config()
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-chai.use(chaiAsPromised);
-const should = chai.should();
+const chai = require('chai')
+const chaiAsPromised = require('chai-as-promised')
+chai.use(chaiAsPromised)
+const should = chai.should()
 const querystring = require('querystring')
 
 // Initialize Time Core to seed DB as-needed
