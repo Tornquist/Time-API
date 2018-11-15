@@ -257,13 +257,13 @@ describe('Auth', function() {
       return response
     }
 
-    it('Rejects access when no authentication header is present', async () => {
+    it('rejects access when no authentication header is present', async () => {
       let response = await genericRequest()
 
       response.statusCode.should.eq(401)
     })
 
-    it('Rejects access when an invalid header is present', async () => {
+    it('rejects access when an invalid header is present', async () => {
       let response = await genericRequest({
         'Authorization': 'Does not match regex at all'
       })
@@ -271,7 +271,7 @@ describe('Auth', function() {
       response.statusCode.should.eq(401)
     })
 
-    it('Rejects access when an invalid token', async () => {
+    it('rejects access when an invalid token', async () => {
       let response = await genericRequest({
         'Authorization': 'Bearer madeUpToken'
       })
@@ -279,7 +279,7 @@ describe('Auth', function() {
       response.statusCode.should.eq(401)
     })
 
-    it('Accepts with a valid authentication header', async () => {
+    it('accepts with a valid authentication header', async () => {
       let response = await genericRequest({
         'Authorization': `Bearer ${validToken.payload.token}`
       })
