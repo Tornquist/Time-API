@@ -1,6 +1,6 @@
 const joi = require('joi')
 const boom = require('boom')
-const sdk = require('time-core')()
+const Time = require('time-core')()
 
 exports.path = '/accounts/{id}'
 
@@ -9,7 +9,8 @@ const GET_RESPONSES = {
   '200': {
     'description': 'Success',
     'schema': joi.object({
-      userIDs: joi.array().items(joi.number().integer()).required()
+      id: joi.number().integer(),
+      user_ids: joi.array().items(joi.number().integer()).required()
     })
   },
   '404': {
@@ -21,9 +22,12 @@ const GET_RESPONSES = {
 }
 
 const GET_HANDLER = (request, h) =>
-  sdk.Account.fetch(request.params.id)
-    .then(account => account.props)
-    .catch(err => err === sdk.Error.Data.NOT_FOUND
+  Time.Account.fetch(request.params.id)
+    .then(account => ({
+      id: account.id,
+      user_ids: account.props.userIDs
+    }))
+    .catch(err => err === Time.Error.Data.NOT_FOUND
       ? boom.notFound()
       : boom.badImplementation()
     )

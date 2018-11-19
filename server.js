@@ -7,7 +7,7 @@ const hapiSwagger = require('hapi-swagger');
 const apiPackage = require('./package');
 
 require('dotenv').config()
-require('./lib/sdk').initialize()
+require('./lib/time').initialize()
 const routes = require('./lib/routes')
 
 module.exports = (async () => {
