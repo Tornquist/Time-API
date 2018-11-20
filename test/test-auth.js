@@ -250,7 +250,7 @@ describe('Auth', function() {
     let genericRequest = async (headers = {}) => {
       let response = await server.inject({
         method: 'GET',
-        url: '/accounts/9',
+        url: '/accounts/1000000',
         headers: headers
       })
 

@@ -21,16 +21,26 @@ const GET_RESPONSES = {
   }
 }
 
-const GET_HANDLER = (request, h) =>
-  Time.Account.fetch(request.params.id)
-    .then(account => ({
-      id: account.id,
-      user_ids: account.props.userIDs
-    }))
-    .catch(err => err === Time.Error.Data.NOT_FOUND
+const GET_HANDLER = async (request, h) => {
+  let account;
+  try {
+    account = await Time.Account.fetch(request.params.id)
+  } catch (err) {
+    throw err === Time.Error.Data.NOT_FOUND
       ? boom.notFound()
       : boom.badImplementation()
-    )
+  }
+
+  let userID = request.auth.credentials.user_id
+  let authorized = account.props.userIDs.includes(userID)
+  if (!authorized)
+    throw boom.unauthorized()
+
+  return {
+    id: account.id,
+    user_ids: account.props.userIDs
+  }
+}
 
 exports.get = {
   description: GET_DESCRIPTION,
@@ -38,5 +48,5 @@ exports.get = {
     params: { id: joi.number().integer() }
   },
   plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
-  handler: (request, h) => GET_HANDLER
+  handler: GET_HANDLER
 }

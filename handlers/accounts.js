@@ -38,7 +38,7 @@ const GET_HANDLER = async (request, h) => {
 
   return accounts.map(account => ({
     id: account.id,
-    user_ids: this.props.userIDs
+    user_ids: account.props.userIDs
   }))
 }
 
@@ -59,11 +59,11 @@ const POST_HANDLER = async (request, h) => {
 exports.get = {
   description: GET_DESCRIPTION,
   plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
-  handler: (request, h) => GET_HANDLER
+  handler: GET_HANDLER
 }
 
 exports.post = {
   description: POST_DESCRIPTION,
   plugins: { 'hapi-swagger': { responses: POST_RESPONSES } },
-  handler: (request, h) => POST_HANDLER
+  handler: POST_HANDLER
 }
