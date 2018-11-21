@@ -56,10 +56,11 @@ const GET_HANDLER = async (request, h) => {
   }))
 }
 
-const POST_HANDLER = async (request, h) => {
+const POST_HANDLER_REQUEST_VALIDATION = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let accounts = await Time.Account.findForUser(userID)
 
+  // Validate if account is available to the current user
   let validAccount = accounts.reduce((acc, cur) => {
     let currentIsTarget = cur.id == request.payload.account_id
     return acc || currentIsTarget
@@ -68,18 +69,22 @@ const POST_HANDLER = async (request, h) => {
   let allowedToAccess = hasAccounts && validAccount
   if (!allowedToAccess) throw boom.unauthorized()
 
-  let account_id = request.payload.account_id
-  let name = request.payload.name
+  // Validate if parent exists
   let parentID = request.payload.parent_id
-
-  let category = new Time.Category({ name, account_id })
-
   if (parentID) {
     let parent = await Time.Category.fetch(parentID).catch(() => null)
     if (!parent) throw boom.badRequest()
-
-    category.parent = parent
   }
+}
+
+const POST_HANDLER = async (request, h) => {
+  await POST_HANDLER_REQUEST_VALIDATION(request, h)
+
+  let account_id = request.payload.account_id
+  let name = request.payload.name
+  let parent_id = request.payload.parent_id
+
+  let category = new Time.Category({ name, account_id, parent_id })
 
   try {
     await category.save()
