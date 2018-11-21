@@ -42,7 +42,7 @@ const DELETE_RESPONSES = {
 
 const VALIDATE_ACCOUNT = async (accountID, userID) => {
   let account = await Time.Account.fetch(accountID)
-  let authorized = account.props.userIDs.includes(userID)
+  let authorized = account.userIDs.includes(userID)
   if (!authorized) throw boom.unauthorized()
 }
 
@@ -68,7 +68,7 @@ const HANDLER = async (request, h) => {
 
 const FORMAT_CATEGORY = (category) => ({
   id: category.id,
-  parent_id: category.props.parent_id,
+  parent_id: category.parent_id,
   account_id: category.account_id,
   name: category.name
 })

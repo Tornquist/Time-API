@@ -55,8 +55,8 @@ const GET_HANDLER = async (request, h) => {
 
   return categories.map(category => ({
     id: category.id,
-    parent_id: category.props.parent_id,
-    account_id: category.props.account_id,
+    parent_id: category.parent_id,
+    account_id: category.account_id,
     name: category.name
   }))
 }
@@ -100,8 +100,8 @@ const POST_HANDLER = async (request, h) => {
 
     return {
       id: category.id,
-      parent_id: category.props.parent_id,
-      account_id: category.props.account_id,
+      parent_id: category.parent_id,
+      account_id: category.account_id,
       name: category.name
     }
   } catch (err) {

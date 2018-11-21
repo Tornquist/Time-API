@@ -38,7 +38,7 @@ const GET_HANDLER = async (request, h) => {
 
   return accounts.map(account => ({
     id: account.id,
-    user_ids: account.props.userIDs
+    user_ids: account.userIDs
   }))
 }
 
@@ -52,7 +52,7 @@ const POST_HANDLER = async (request, h) => {
 
   return {
     id: account.id,
-    user_ids: account.props.userIDs
+    user_ids: account.userIDs
   }
 }
 
