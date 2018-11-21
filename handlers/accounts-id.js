@@ -32,13 +32,13 @@ const GET_HANDLER = async (request, h) => {
   }
 
   let userID = request.auth.credentials.user_id
-  let authorized = account.props.userIDs.includes(userID)
+  let authorized = account.userIDs.includes(userID)
   if (!authorized)
     throw boom.unauthorized()
 
   return {
     id: account.id,
-    user_ids: account.props.userIDs
+    user_ids: account.userIDs
   }
 }
 
