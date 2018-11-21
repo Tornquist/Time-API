@@ -190,6 +190,93 @@ describe('Categories', function() {
       message.should.eq('Mismatched Parent and Account IDs')
     })
 
+    describe('Filtering categories', () => {
+      let accountA, accountB, accountC, accountD;
+      before(async() => {
+        accountA = accountID
+        accountB = await AccountHelper.create(userA.user.id).then(r => r.id)
+        accountC = await AccountHelper.create(userA.user.id).then(r => r.id)
+        accountD = await AccountHelper.create(userA.user.id).then(r => r.id)
+
+        a = await CategoryHelper.create("A", accountB)
+        b = await CategoryHelper.create("B", accountB)
+        c = await CategoryHelper.create("C", accountB)
+
+        d = await CategoryHelper.create("D", accountC)
+        e = await CategoryHelper.create("E", accountC)
+
+        f = await CategoryHelper.create("F", accountD)
+      })
+
+      it('returns the expected number of unfiltered results', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/categories`,
+          headers: { 'Authorization': `Bearer ${tokenA}` },
+        })
+
+        let categories = JSON.parse(response.payload)
+        categories.length.should.eq(3+9) // include roots
+      })
+
+      it('allows filtering by account id b', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/categories?account_id=${accountB}`,
+          headers: { 'Authorization': `Bearer ${tokenA}` },
+        })
+
+        let categories = JSON.parse(response.payload)
+        categories.length.should.eq(1+3) // include roots
+        categories.forEach(entry => {
+          entry.account_id.should.eq(accountB)
+        })
+      })
+
+      it('allows filtering by account id c', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/categories?account_id=${accountC}`,
+          headers: { 'Authorization': `Bearer ${tokenA}` },
+        })
+
+        let categories = JSON.parse(response.payload)
+        categories.length.should.eq(1+2) // include roots
+        categories.forEach(entry => {
+          entry.account_id.should.eq(accountC)
+        })
+      })
+
+      it('allows filtering by any account id', async () => {
+        let fakeID = 100000
+        let response = await server.inject({
+          method: 'GET',
+          url: `/categories?account_id=${fakeID}`,
+          headers: { 'Authorization': `Bearer ${tokenA}` },
+        })
+
+        let categories = JSON.parse(response.payload)
+        categories.length.should.eq(0)
+        categories.forEach(entry => {
+          entry.account_id.should.eq(fakeID)
+        })
+      })
+
+      it('allows filtering by multiple account ids', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/categories?account_id=${accountB}&account_id=${accountC}`,
+          headers: { 'Authorization': `Bearer ${tokenA}` },
+        })
+
+        let categories = JSON.parse(response.payload)
+        categories.length.should.eq(1+3+1+2) // include roots
+        categories.forEach(entry => {
+          entry.account_id.should.be.oneOf([accountB, accountC])
+        })
+      })
+    })
+
     after(async () => {
       await UserHelper.cleanup(userA)
       await UserHelper.cleanup(userB)

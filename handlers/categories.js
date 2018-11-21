@@ -42,6 +42,11 @@ const POST_RESPONSES = {
 const GET_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let accounts = await Time.Account.findForUser(userID)
+
+  let filterAccountIDs = request.query.account_id
+  if (filterAccountIDs)
+    accounts = accounts.filter(account => filterAccountIDs.includes(account.id))
+
   let categoriesForAccounts = await Promise.all(accounts.map(account =>
     Time.Category.findForAccount(account)
   ))
@@ -55,6 +60,10 @@ const GET_HANDLER = async (request, h) => {
     name: category.name
   }))
 }
+
+const GET_QUERY = joi.object().keys({
+  account_id: joi.array().items(joi.number().integer()).single()
+}).allow(null)
 
 const POST_HANDLER_REQUEST_VALIDATION = async (request, h) => {
   let userID = request.auth.credentials.user_id
@@ -118,7 +127,8 @@ const POST_PAYLOAD = joi.object().keys({
 exports.get = {
   description: GET_DESCRIPTION,
   plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
-  handler: GET_HANDLER
+  handler: GET_HANDLER,
+  validate: { query: GET_QUERY }
 }
 
 exports.post = {
