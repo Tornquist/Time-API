@@ -19,7 +19,7 @@ describe('Entries', function() {
 
   let user, token, account;
   let work, email, program, codeReview, archive
-  let userAlt, accountAlt, rootAlt;
+  let userAlt, tokenAlt, accountAlt, rootAlt;
 
   before(async function() {
     this.timeout(5000)
@@ -42,6 +42,7 @@ describe('Entries', function() {
     archive = await CategoryHelper.create("Archive", account, work)
 
     userAlt = await UserHelper.create()
+    tokenAlt = await UserHelper.login(userAlt, server)
     accountAlt = await AccountHelper.create(userAlt.user.id)
     rootAlt = await AccountHelper.getRootCategory(accountAlt)
   })
@@ -243,6 +244,81 @@ describe('Entries', function() {
         //       this returns number when fresh and date on retrieval
         payload.started_at.should.be.a('string')
         payload.ended_at.should.be.a('number')
+      })
+    })
+  })
+
+  describe('Managing individual entries', () => {
+    let entryID, entryAltID;
+    before(async () => {
+      let response = await server.inject({
+        method: 'POST',
+        url: '/entries',
+        headers: { 'Authorization': `Bearer ${token}` },
+        payload: {
+          category_id: email.id,
+          type: 'range',
+          action: 'start'
+        }
+      })
+      entryID = JSON.parse(response.payload).id
+      await server.inject({
+        method: 'POST',
+        url: '/entries',
+        headers: { 'Authorization': `Bearer ${token}` },
+        payload: {
+          category_id: email.id,
+          type: 'range',
+          action: 'stop'
+        }
+      })
+
+      let response2 = await server.inject({
+        method: 'POST',
+        url: '/entries',
+        headers: { 'Authorization': `Bearer ${tokenAlt}` },
+        payload: {
+          category_id: rootAlt.id,
+          type: 'event'
+        }
+      })
+      entryAltID = JSON.parse(response2.payload).id
+    })
+
+    describe('Fetching', () => {
+      it('allows owned entries to be fetched', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/entries/${entryID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(200)
+        let payload = JSON.parse(response.payload)
+        payload.id.should.eq(entryID)
+        payload.type.should.eq('range')
+        payload.category_id.should.eq(email.id)
+
+        // ISO date. Needs validation
+        payload.started_at.should.be.a('string')
+        payload.ended_at.should.be.a('string')
+      })
+
+      it('denies access to entries for other accounts', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/entries/${entryAltID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(401)
+      })
+
+      it('rejects entries that do not exist', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/entries/${100000}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(400)
       })
     })
   })
