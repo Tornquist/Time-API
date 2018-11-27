@@ -60,8 +60,8 @@ const POST_HANDLER = async (request, h) => {
       id: entry.id,
       type: entry.type,
       category_id: entry.props.category_id,
-      started_at: entry.props.started_at,
-      ended_at: entry.props.ended_at
+      started_at: entry.startedAt,
+      ended_at: entry.endedAt
     }
   } catch (err) {
     switch (err) {

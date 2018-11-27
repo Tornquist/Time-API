@@ -5,6 +5,7 @@ chai.use(chaiAsPromised)
 const should = chai.should()
 const uuid = require('uuid/v4')
 const querystring = require('querystring')
+const moment = require('moment')
 
 // Initialize Time Core to seed DB as-needed
 const config = require('./setup/config')
@@ -13,6 +14,8 @@ const Time = require('time-core')(config)
 const AccountHelper = require('./helpers/account')
 const CategoryHelper = require('./helpers/category')
 const UserHelper = require('./helpers/user')
+
+const TIMESTAMP_REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})\.(\d{3})Z/
 
 describe('Entries', function() {
   let server;
@@ -87,10 +90,9 @@ describe('Entries', function() {
         response.payload.type.should.eq('event')
         response.payload.category_id.should.eq(work.id)
 
-        response.payload.started_at.should.be.a('number')
-        let date = new Date(response.payload.started_at)
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
 
-        let timeDelta = (new Date()).getTime() - response.payload.started_at
+        let timeDelta = moment().diff(moment(response.payload.started_at))
         // Within 100ms. Allow for drift between services
         timeDelta.should.be.lessThan(100)
       })
@@ -135,7 +137,7 @@ describe('Entries', function() {
         response.payload.type.should.eq('range')
         response.payload.category_id.should.eq(email.id)
 
-        response.payload.started_at.should.be.a('number')
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
         should.not.exist(response.payload.ended_at)
       })
 
@@ -160,7 +162,7 @@ describe('Entries', function() {
         response.payload.type.should.eq('range')
         response.payload.category_id.should.eq(program.id)
 
-        response.payload.started_at.should.be.a('number')
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
         should.not.exist(response.payload.ended_at)
       })
 
@@ -175,10 +177,8 @@ describe('Entries', function() {
         response.payload.type.should.eq('range')
         response.payload.category_id.should.eq(program.id)
 
-        // TODO: Update Time-Core to output consistent formats
-        //       this returns number when fresh and date on retrieval
-        response.payload.started_at.should.be.a('string')
-        response.payload.ended_at.should.be.a('number')
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.ended_at.should.match(TIMESTAMP_REGEX)
       })
 
       it('allows stopping another active range', async () => {
@@ -192,10 +192,8 @@ describe('Entries', function() {
         response.payload.type.should.eq('range')
         response.payload.category_id.should.eq(email.id)
 
-        // TODO: Update Time-Core to output consistent formats
-        //       this returns number when fresh and date on retrieval
-        response.payload.started_at.should.be.a('string')
-        response.payload.ended_at.should.be.a('number')
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.ended_at.should.match(TIMESTAMP_REGEX)
       })
     })
   })
@@ -235,9 +233,8 @@ describe('Entries', function() {
         payload.type.should.eq('range')
         payload.category_id.should.eq(email.id)
 
-        // ISO date. Needs validation
-        payload.started_at.should.be.a('string')
-        payload.ended_at.should.be.a('string')
+        payload.started_at.should.match(TIMESTAMP_REGEX)
+        payload.ended_at.should.match(TIMESTAMP_REGEX)
       })
 
       it('denies access to entries for other accounts', async () => {
