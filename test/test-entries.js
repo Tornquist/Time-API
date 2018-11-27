@@ -47,83 +47,68 @@ describe('Entries', function() {
     rootAlt = await AccountHelper.getRootCategory(accountAlt)
   })
 
+  let postEntries = async (token, payload) => {
+    let response = await server.inject({
+      method: 'POST',
+      url: '/entries',
+      headers: { 'Authorization': `Bearer ${token}` },
+      payload: payload
+    })
+    response.payload = JSON.parse(response.payload)
+    return response
+  }
+
   describe('Creating', () => {
     it('denies requests to unauthorized categories', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/entries',
-        headers: { 'Authorization': `Bearer ${token}` },
-        payload: {
-          category_id: rootAlt.id,
-          type: 'event'
-        }
+      let response = await postEntries(token, {
+        category_id: rootAlt.id,
+        type: 'event'
       })
       response.statusCode.should.eq(401)
     })
 
     it('denies requests to categories that do not exist', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/entries',
-        headers: { 'Authorization': `Bearer ${token}` },
-        payload: {
-          category_id: 100000,
-          type: 'event'
-        }
+      let response = await postEntries(token, {
+        category_id: 100000,
+        type: 'event'
       })
       response.statusCode.should.eq(400)
     })
 
     describe('Events', () => {
       it('allows creating entries', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: work.id,
-            type: 'event'
-          }
+        let response = await postEntries(token, {
+          category_id: work.id,
+          type: 'event'
         })
 
         response.statusCode.should.eq(200)
-        let payload = JSON.parse(response.payload)
-        payload.id.should.be.a('number')
-        payload.type.should.eq('event')
-        payload.category_id.should.eq(work.id)
+        response.payload.id.should.be.a('number')
+        response.payload.type.should.eq('event')
+        response.payload.category_id.should.eq(work.id)
 
-        payload.started_at.should.be.a('number')
-        let date = new Date(payload.started_at)
+        response.payload.started_at.should.be.a('number')
+        let date = new Date(response.payload.started_at)
 
-        let timeDelta = (new Date()).getTime() - payload.started_at
+        let timeDelta = (new Date()).getTime() - response.payload.started_at
         // Within 100ms. Allow for drift between services
         timeDelta.should.be.lessThan(100)
       })
 
       it('denies creating events with a start action', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: work.id,
-            type: 'event',
-            action: 'start'
-          }
+        let response = await postEntries(token, {
+          category_id: work.id,
+          type: 'event',
+          action: 'start'
         })
         response.statusCode.should.eq(400)
       })
 
       it('denies creating events with a stop action', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: work.id,
-            type: 'event',
-            action: 'stop'
-          }
+        let response = await postEntries(token, {
+          category_id: work.id,
+          type: 'event',
+          action: 'stop'
         })
         response.statusCode.should.eq(400)
       })
@@ -131,119 +116,86 @@ describe('Entries', function() {
 
     describe('Ranges', () => {
       it('denies stopping a range when none are active for a category', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: email.id,
-            type: 'range',
-            action: 'stop'
-          }
+        let response = await postEntries(token, {
+          category_id: email.id,
+          type: 'range',
+          action: 'stop'
         })
         response.statusCode.should.eq(400)
       })
 
       it('allows starting a range for a category', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: email.id,
-            type: 'range',
-            action: 'start'
-          }
+        let response = await postEntries(token, {
+          category_id: email.id,
+          type: 'range',
+          action: 'start'
         })
         response.statusCode.should.eq(200)
-        let payload = JSON.parse(response.payload)
-        payload.id.should.be.a('number')
-        payload.type.should.eq('range')
-        payload.category_id.should.eq(email.id)
+        response.payload.id.should.be.a('number')
+        response.payload.type.should.eq('range')
+        response.payload.category_id.should.eq(email.id)
 
-        payload.started_at.should.be.a('number')
-        should.not.exist(payload.ended_at)
+        response.payload.started_at.should.be.a('number')
+        should.not.exist(response.payload.ended_at)
       })
 
       it('denies starting a range when one is active for the category', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: email.id,
-            type: 'range',
-            action: 'start'
-          }
+        let response = await postEntries(token, {
+          category_id: email.id,
+          type: 'range',
+          action: 'start'
         })
         response.statusCode.should.eq(400)
       })
 
       it('allows starting a second range for a different category', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: program.id,
-            type: 'range',
-            action: 'start'
-          }
+        let response = await postEntries(token, {
+          category_id: program.id,
+          type: 'range',
+          action: 'start'
         })
-        response.statusCode.should.eq(200)
-        let payload = JSON.parse(response.payload)
-        payload.id.should.be.a('number')
-        payload.type.should.eq('range')
-        payload.category_id.should.eq(program.id)
 
-        payload.started_at.should.be.a('number')
-        should.not.exist(payload.ended_at)
+        response.statusCode.should.eq(200)
+        response.payload.id.should.be.a('number')
+        response.payload.type.should.eq('range')
+        response.payload.category_id.should.eq(program.id)
+
+        response.payload.started_at.should.be.a('number')
+        should.not.exist(response.payload.ended_at)
       })
 
       it('allows stopping a range when one is active for a category', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: program.id,
-            type: 'range',
-            action: 'stop'
-          }
+        let response = await postEntries(token, {
+          category_id: program.id,
+          type: 'range',
+          action: 'stop'
         })
         response.statusCode.should.eq(200)
-        let payload = JSON.parse(response.payload)
-        payload.id.should.be.a('number')
-        payload.type.should.eq('range')
-        payload.category_id.should.eq(program.id)
+        response.payload.id.should.be.a('number')
+        response.payload.type.should.eq('range')
+        response.payload.category_id.should.eq(program.id)
 
         // TODO: Update Time-Core to output consistent formats
         //       this returns number when fresh and date on retrieval
-        payload.started_at.should.be.a('string')
-        payload.ended_at.should.be.a('number')
+        response.payload.started_at.should.be.a('string')
+        response.payload.ended_at.should.be.a('number')
       })
 
       it('allows stopping another active range', async () => {
-        let response = await server.inject({
-          method: 'POST',
-          url: '/entries',
-          headers: { 'Authorization': `Bearer ${token}` },
-          payload: {
-            category_id: email.id,
-            type: 'range',
-            action: 'stop'
-          }
+        let response = await postEntries(token, {
+          category_id: email.id,
+          type: 'range',
+          action: 'stop'
         })
         response.statusCode.should.eq(200)
-        let payload = JSON.parse(response.payload)
-        payload.id.should.be.a('number')
-        payload.type.should.eq('range')
-        payload.category_id.should.eq(email.id)
+        response.payload.id.should.be.a('number')
+        response.payload.type.should.eq('range')
+        response.payload.category_id.should.eq(email.id)
 
         // TODO: Update Time-Core to output consistent formats
         //       this returns number when fresh and date on retrieval
-        payload.started_at.should.be.a('string')
-        payload.ended_at.should.be.a('number')
+        response.payload.started_at.should.be.a('string')
+        response.payload.ended_at.should.be.a('number')
       })
     })
   })
@@ -251,38 +203,23 @@ describe('Entries', function() {
   describe('Managing individual entries', () => {
     let entryID, entryAltID;
     before(async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/entries',
-        headers: { 'Authorization': `Bearer ${token}` },
-        payload: {
-          category_id: email.id,
-          type: 'range',
-          action: 'start'
-        }
+      let response = await postEntries(token, {
+        category_id: email.id,
+        type: 'range',
+        action: 'start'
       })
-      entryID = JSON.parse(response.payload).id
-      await server.inject({
-        method: 'POST',
-        url: '/entries',
-        headers: { 'Authorization': `Bearer ${token}` },
-        payload: {
-          category_id: email.id,
-          type: 'range',
-          action: 'stop'
-        }
+      entryID = response.payload.id
+      await postEntries(token, {
+        category_id: email.id,
+        type: 'range',
+        action: 'stop'
       })
 
-      let response2 = await server.inject({
-        method: 'POST',
-        url: '/entries',
-        headers: { 'Authorization': `Bearer ${tokenAlt}` },
-        payload: {
-          category_id: rootAlt.id,
-          type: 'event'
-        }
+      let response2 = await postEntries(tokenAlt, {
+        category_id: rootAlt.id,
+        type: 'event'
       })
-      entryAltID = JSON.parse(response2.payload).id
+      entryAltID = response2.payload.id
     })
 
     describe('Fetching', () => {
