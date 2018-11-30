@@ -21,7 +21,10 @@ describe('Entries', function() {
   let server;
 
   let user, token, account;
-  let work, email, program, codeReview, archive
+  let work, email, program, codeReview, archive;
+
+  let secondAccount, lotsOfStuff;
+
   let userAlt, tokenAlt, accountAlt, rootAlt;
 
   before(async function() {
@@ -43,6 +46,9 @@ describe('Entries', function() {
     program = await CategoryHelper.create("Program", account, work)
     codeReview = await CategoryHelper.create("Code Review", account, work)
     archive = await CategoryHelper.create("Archive", account, work)
+
+    secondAccount = await AccountHelper.create(user.user.id)
+    lotsOfStuff = await CategoryHelper.create("Lots of Stuff", secondAccount)
 
     userAlt = await UserHelper.create()
     tokenAlt = await UserHelper.login(userAlt, server)
@@ -256,6 +262,175 @@ describe('Entries', function() {
       })
     })
 
+    describe('Updating', () => {
+      let entryID;
+      before(async () => {
+        let response = await postEntries(token, {
+          category_id: email.id,
+          type: 'event'
+        })
+        entryID = response.payload.id
+      })
+
+      let updateEntry = async (payload = {}) => {
+        let response = await server.inject({
+          method: 'PUT',
+          url: `/entries/${entryID}`,
+          headers: { 'Authorization': `Bearer ${token}` },
+          payload: payload
+        })
+        response.payload = JSON.parse(response.payload)
+        return response
+      }
+
+      it('rejects changing nothing', async () => {
+        let response = await updateEntry()
+        response.statusCode.should.eq(400)
+      })
+
+      it('allows moving an entry to a new category', async () => {
+        let response = await updateEntry({
+          category_id: program.id
+        })
+
+        response.statusCode.should.eq(200)
+
+        response.payload.id.should.eq(entryID)
+        response.payload.type.should.eq('event')
+        response.payload.category_id.should.eq(program.id)
+
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.ended_at)
+      })
+
+      it('allows moving to a category in a different owned account', async () => {
+        let response = await updateEntry({
+          category_id: lotsOfStuff.id
+        })
+
+        response.statusCode.should.eq(200)
+
+        response.payload.id.should.eq(entryID)
+        response.payload.type.should.eq('event')
+        response.payload.category_id.should.eq(lotsOfStuff.id)
+
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.ended_at)
+      })
+
+      it('rejects moving to a category in an unowned account', async () => {
+        let response = await updateEntry({
+          category_id: rootAlt.id
+        })
+        response.statusCode.should.eq(401)
+      })
+
+      it('rejects moving to an invalid category', async () => {
+        let response = await updateEntry({
+          category_id: 1000000
+        })
+        response.statusCode.should.eq(400)
+      })
+
+      it('allows changing type', async () => {
+        let response = await updateEntry({
+          type: 'range'
+        })
+
+        response.statusCode.should.eq(200)
+
+        response.payload.id.should.eq(entryID)
+        response.payload.type.should.eq('range')
+        response.payload.category_id.should.eq(lotsOfStuff.id)
+
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.ended_at)
+      })
+
+      it('allows events changed to ranges to be stopped using actions', async () => {
+        let a = await postEntries(token, {
+          category_id: lotsOfStuff.id,
+          type: 'range',
+          action: 'stop'
+        })
+
+        let response = await server.inject({
+          method: 'GET',
+          url: `/entries/${entryID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        let payload = JSON.parse(response.payload)
+        payload.started_at.should.match(TIMESTAMP_REGEX)
+        payload.ended_at.should.match(TIMESTAMP_REGEX)
+      })
+
+      it('allows changing start time', async () => {
+        let newStart = '2018-01-02T12:13:14.123Z'
+        let response = await updateEntry({
+          started_at: newStart
+        })
+
+        response.statusCode.should.eq(200)
+        response.payload.started_at.should.eq(newStart)
+        response.payload.ended_at.should.match(TIMESTAMP_REGEX)
+      })
+
+      it('allows changing end time', async () => {
+        let newEnd = '2018-02-03T13:14:15.234Z'
+        let response = await updateEntry({
+          ended_at: newEnd
+        })
+
+        response.statusCode.should.eq(200)
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.ended_at.should.eq(newEnd)
+      })
+
+      it('rejects changing ended at when the type is event', async () => {
+        let response = await updateEntry({
+          type: 'event',
+          ended_at: '2018-03-04T12:12:12.021Z'
+        })
+        response.statusCode.should.eq(400)
+      })
+
+      it('rejects changing ended at when type was event already', async () => {
+        let firstAction = await updateEntry({
+          type: 'event'
+        })
+        firstAction.statusCode.should.eq(200)
+
+        let response = await updateEntry({
+          ended_at: '2018-03-04T12:12:12.021Z'
+        })
+        response.statusCode.should.eq(400)
+      })
+
+      it('allows changing type and ended at togther when type is range', async () => {
+        let newEnd = '2018-02-03T03:03:04.234Z'
+        let response = await updateEntry({
+          type: 'range',
+          ended_at: newEnd
+        })
+
+        response.statusCode.should.eq(200)
+        response.payload.type.should.eq('range')
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.ended_at.should.eq(newEnd)
+      })
+
+      it('clears ended at when changing type back to event', async () => {
+        let response = await updateEntry({
+          type: 'event',
+        })
+
+        response.statusCode.should.eq(200)
+        response.payload.type.should.eq('event')
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.ended_at)
+      })
+    })
+
     describe('Deleting', () => {
       it('allows owned entries to be deleted', async () => {
         let response = await server.inject({
@@ -279,6 +454,7 @@ describe('Entries', function() {
 
   after(async () => {
     await AccountHelper.cleanup(account)
+    await AccountHelper.cleanup(secondAccount)
     await UserHelper.cleanup(user)
 
     await AccountHelper.cleanup(accountAlt)
