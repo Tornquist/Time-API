@@ -6,7 +6,35 @@ exports.path = '/entries/{id}'
 
 const GET_DESCRIPTION = 'Fetch an Entry'
 const PUT_DESCRIPTION = 'Update Entries'
+const GENERAL_RESPONSES = {
+  '200': {
+    'description': 'Success',
+    'schema': joi.object({
+      id: joi.number().integer(),
+      type: joi.string().valid(Object.values(Time.Type.Entry)),
+      category_id: joi.number().integer(),
+      started_at: joi.string().isoDate(),
+      ended_at: joi.string().isoDate()
+    })
+  },
+  '400': { 'description': 'Bad request' },
+  '401': { 'description': 'Unauthorized action' },
+  '404': { 'description': 'Unable to find requested object' },
+  '500': { 'description': 'Server Error' }
+}
+
 const DELETE_DESCRIPTION = 'Remove Entries'
+const DELETE_RESPONSES = {
+  '200': {
+    'description': 'Success',
+    'schema': joi.object().keys({
+      success: joi.boolean()
+    })
+  },
+  '500': {
+    'description': 'Server Error'
+  }
+}
 
 const VALIDATE_AND_LOAD_CATEGORY = async (userID, categoryID) => {
   const UNAUTHORIZED = new Error("Unauthorized")
@@ -125,6 +153,7 @@ exports.get = {
   validate: {
     params: { id: joi.number().integer() }
   },
+  plugins: { 'hapi-swagger': { responses: GENERAL_RESPONSES } },
   handler: GET_HANDLER
 }
 
@@ -134,6 +163,7 @@ exports.put = {
     params: { id: joi.number().integer() },
     payload: PUT_PAYLOAD
   },
+  plugins: { 'hapi-swagger': { responses: GENERAL_RESPONSES } },
   handler: PUT_HANDLER
 }
 
@@ -142,5 +172,6 @@ exports.delete = {
   validate: {
     params: { id: joi.number().integer() }
   },
+  plugins: { 'hapi-swagger': { responses: DELETE_RESPONSES } },
   handler: DELETE_HANDLER
 }
