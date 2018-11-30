@@ -60,7 +60,11 @@ const PUT_PAYLOAD = joi.object().keys({
 })
 
 const DELETE_HANDLER = async (request, h) => {
-  return boom.notImplemented()
+  let userID = request.auth.credentials.user_id
+  let entryID = request.params.id
+  let entry = await VALIDATE_AND_LOAD_ENTRY(userID, entryID)
+  await entry.delete()
+  return { success: true }
 }
 
 exports.get = {

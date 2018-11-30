@@ -255,6 +255,26 @@ describe('Entries', function() {
         response.statusCode.should.eq(400)
       })
     })
+
+    describe('Deleting', () => {
+      it('allows owned entries to be deleted', async () => {
+        let response = await server.inject({
+          method: 'DELETE',
+          url: `/entries/${entryID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(200)
+      })
+
+      it('rejects deleting entries for other accounts', async () => {
+        let response = await server.inject({
+          method: 'DELETE',
+          url: `/entries/${entryAltID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(401)
+      })
+    })
   })
 
   after(async () => {
