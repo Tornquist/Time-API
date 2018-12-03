@@ -4,7 +4,6 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const should = chai.should()
 const uuid = require('uuid/v4')
-const querystring = require('querystring')
 
 // Initialize Time Core to seed DB as-needed
 const config = require('./setup/config')

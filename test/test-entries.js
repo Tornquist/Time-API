@@ -14,6 +14,7 @@ const Time = require('time-core')(config)
 const AccountHelper = require('./helpers/account')
 const CategoryHelper = require('./helpers/category')
 const UserHelper = require('./helpers/user')
+const EntryHelper = require('./helpers/entry')
 
 const TIMESTAMP_REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})\.(\d{3})Z/
 
@@ -35,6 +36,7 @@ describe('Entries', function() {
     AccountHelper.link(Time)
     CategoryHelper.link(Time)
     UserHelper.link(Time)
+    EntryHelper.link(Time)
 
     user = await UserHelper.create()
     token = await UserHelper.login(user, server)
@@ -56,6 +58,48 @@ describe('Entries', function() {
     rootAlt = await AccountHelper.getRootCategory(accountAlt)
   })
 
+  let getEntries = async (token, query = {}) => {
+    let baseURL = '/entries'
+    let extensions = []
+
+    if (query.account_id) {
+      if (Array.isArray(query.account_id)) {
+        Object.values(query.account_id).forEach(id => {
+          extensions.push(`account_id=${id}`)
+        })
+      } else {
+        extensions.push(`account_id=${query.account_id}`)
+      }
+    }
+
+    if (query.category_id) {
+      if (Array.isArray(query.category_id)) {
+        Object.values(query.category_id).forEach(id => {
+          extensions.push(`category_id=${id}`)
+        })
+      } else {
+        extensions.push(`category_id=${query.category_id}`)
+      }
+    }
+
+    if (query.type) {
+      extensions.push(`type=${query.type}`)
+    }
+
+    if (extensions.length > 0) {
+      let queryString = extensions.join("&")
+      baseURL = baseURL + '?' + queryString
+    }
+
+    let response = await server.inject({
+      method: 'GET',
+      url: baseURL,
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    response.payload = JSON.parse(response.payload)
+    return response
+  }
+
   let postEntries = async (token, payload) => {
     let response = await server.inject({
       method: 'POST',
@@ -66,6 +110,106 @@ describe('Entries', function() {
     response.payload = JSON.parse(response.payload)
     return response
   }
+
+  describe('Fetching entries', () => {
+    before(async () => {
+      await EntryHelper.createEvent(work)
+      await EntryHelper.createEvent(work)
+      await EntryHelper.createEvent(work)
+      await EntryHelper.createEvent(email)
+      await EntryHelper.createRange(email)
+      await EntryHelper.createRange(codeReview)
+      await EntryHelper.createRange(codeReview)
+
+      await EntryHelper.createEvent(lotsOfStuff)
+      await EntryHelper.createRange(lotsOfStuff)
+      await EntryHelper.createRange(lotsOfStuff)
+
+      await EntryHelper.createEvent(rootAlt)
+      await EntryHelper.createRange(rootAlt)
+    })
+
+    it('returns entries in owned accounts by default with the correct format', async () => {
+      let response = await getEntries(token)
+      response.payload.length.should.eq(10)
+
+      response.payload.forEach(entry => {
+        entry.id.should.be.a('number')
+        entry.type.should.be.a('string')
+        entry.category_id.should.be.a('number')
+        entry.started_at.should.match(TIMESTAMP_REGEX)
+
+        if (entry.type === 'event') {
+          should.not.exist(entry.ended_at)
+        } else {
+          entry.ended_at.should.match(TIMESTAMP_REGEX)
+        }
+      })
+    })
+
+    it('allows filtering to a specific account', async () => {
+      let response = await getEntries(token, {
+        account_id: account.id
+      })
+      response.payload.length.should.eq(7)
+    })
+
+    it('allows filtering to a specific category', async () => {
+      let response = await getEntries(token, {
+        category_id: work.id
+      })
+      response.payload.length.should.eq(3)
+    })
+
+    it('allows filtering to specific categories', async () => {
+      let response = await getEntries(token, {
+        category_id: [work.id, email.id]
+      })
+      response.payload.length.should.eq(5)
+    })
+
+    it('allows filtering to specific categories in multiple accounts', async () => {
+      let response = await getEntries(token, {
+        category_id: [work.id, email.id, lotsOfStuff.id]
+      })
+      response.payload.length.should.eq(8)
+    })
+
+    it('allows filtering to specific categories and accounts', async () => {
+      let response = await getEntries(token, {
+        account_id: secondAccount.id,
+        category_id: [work.id, email.id, lotsOfStuff.id]
+      })
+
+      // work and email will not match. Only secondAccount and lotsOfStuff pass
+      response.payload.length.should.eq(3)
+    })
+
+    it('allows filtering by type', async () => {
+      let response = await getEntries(token, {
+        type: 'event'
+      })
+
+      response.payload.length.should.eq(5)
+    })
+
+    it('allows filtering by type and account', async () => {
+      let response = await getEntries(token, {
+        account_id: account.id,
+        type: 'range'
+      })
+
+      response.payload.length.should.eq(3)
+    })
+
+    it('returns nothing when searching for unowned data', async () => {
+      let response = await getEntries(token, {
+        account_id: accountAlt.id
+      })
+
+      response.payload.length.should.eq(0)
+    })
+  })
 
   describe('Creating', () => {
     it('denies requests to unauthorized categories', async () => {

@@ -11,8 +11,42 @@ const START_ACTION = 'start'
 const STOP_ACTION = 'stop'
 
 const GET_HANDLER = async (request, h) => {
-  return boom.notImplemented()
+  let userID = request.auth.credentials.user_id
+  let accounts = await Time.Account.findForUser(userID)
+  let accountIDs = accounts.map(a => a.id)
+
+  let searchFilters = {}
+
+  if (request.query.account_id) {
+    accountIDs = accountIDs.filter(a => request.query.account_id.includes(a))
+  }
+  searchFilters.account_ids = accountIDs
+
+  if (request.query.category_id) {
+    searchFilters.category_ids = request.query.category_id
+  }
+
+  if (request.query.type) {
+    searchFilters.type = request.query.type
+  }
+
+  let entries = await Time.Entry.findFor(searchFilters)
+  let formattedEntries = entries.map(entry => ({
+    id: entry.id,
+    type: entry.type,
+    category_id: entry.props.category_id,
+    started_at: entry.startedAt,
+    ended_at: entry.endedAt
+  }))
+
+  return formattedEntries
 }
+
+const GET_QUERY = joi.object().keys({
+  category_id: joi.array().items(joi.number().integer()).single(),
+  account_id: joi.array().items(joi.number().integer()).single(),
+  type: joi.string().valid(Object.values(Time.Type.Entry))
+}).allow(null)
 
 const VALIDATE_AND_LOAD_CATEGORY = async (userID, categoryID) => {
   const UNAUTHORIZED = new Error("Unauthorized")
