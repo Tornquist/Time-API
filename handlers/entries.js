@@ -30,6 +30,14 @@ const GET_HANDLER = async (request, h) => {
     searchFilters.type = request.query.type
   }
 
+  if (request.query.date_gt) {
+    searchFilters.date_gt = request.query.date_gt
+  }
+
+  if (request.query.date_lt) {
+    searchFilters.date_lt = request.query.date_lt
+  }
+
   let entries = await Time.Entry.findFor(searchFilters)
   let formattedEntries = entries.map(entry => ({
     id: entry.id,
@@ -45,7 +53,9 @@ const GET_HANDLER = async (request, h) => {
 const GET_QUERY = joi.object().keys({
   category_id: joi.array().items(joi.number().integer()).single(),
   account_id: joi.array().items(joi.number().integer()).single(),
-  type: joi.string().valid(Object.values(Time.Type.Entry))
+  type: joi.string().valid(Object.values(Time.Type.Entry)),
+  date_gt: joi.string().isoDate(),
+  date_lt: joi.string().isoDate()
 }).allow(null)
 
 const VALIDATE_AND_LOAD_CATEGORY = async (userID, categoryID) => {
@@ -93,7 +103,7 @@ const POST_HANDLER = async (request, h) => {
     return {
       id: entry.id,
       type: entry.type,
-      category_id: entry.props.category_id,
+      category_id: entry.category_id,
       started_at: entry.startedAt,
       ended_at: entry.endedAt
     }

@@ -81,7 +81,7 @@ const VALIDATE_AND_LOAD_ENTRY = async (userID, entryID) => {
 const FORMAT_RETURN = (entry) => ({
   id: entry.id,
   type: entry.type,
-  category_id: entry.props.category_id,
+  category_id: entry.category_id,
   started_at: entry.startedAt,
   ended_at: entry.endedAt
 })

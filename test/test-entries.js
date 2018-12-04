@@ -86,6 +86,14 @@ describe('Entries', function() {
       extensions.push(`type=${query.type}`)
     }
 
+    if (query.date_gt) {
+      extensions.push(`date_gt=${querystring.escape(query.date_gt)}`)
+    }
+
+    if (query.date_lt) {
+      extensions.push(`date_lt=${querystring.escape(query.date_lt)}`)
+    }
+
     if (extensions.length > 0) {
       let queryString = extensions.join("&")
       baseURL = baseURL + '?' + queryString
@@ -113,13 +121,13 @@ describe('Entries', function() {
 
   describe('Fetching entries', () => {
     before(async () => {
-      await EntryHelper.createEvent(work)
-      await EntryHelper.createEvent(work)
-      await EntryHelper.createEvent(work)
-      await EntryHelper.createEvent(email)
-      await EntryHelper.createRange(email)
-      await EntryHelper.createRange(codeReview)
-      await EntryHelper.createRange(codeReview)
+      await EntryHelper.createEvent(work, '2018-01-01 01:01:01')
+      await EntryHelper.createEvent(work, '2018-01-02 01:01:01')
+      await EntryHelper.createEvent(work, '2018-01-03 01:01:01')
+      await EntryHelper.createEvent(email, '2018-01-04 01:01:01')
+      await EntryHelper.createRange(email, '2018-01-05 01:01:01')
+      await EntryHelper.createRange(codeReview, '2018-01-06 01:01:01')
+      await EntryHelper.createRange(codeReview, '2018-01-07 01:01:01')
 
       await EntryHelper.createEvent(lotsOfStuff)
       await EntryHelper.createRange(lotsOfStuff)
@@ -208,6 +216,34 @@ describe('Entries', function() {
       })
 
       response.payload.length.should.eq(0)
+    })
+
+    it('allows filtering by greater than', async () => {
+      let response = await getEntries(token, {
+        account_id: account.id,
+        date_gt: '2018-01-03 12:01:01'
+      })
+
+      response.payload.length.should.eq(4)
+    })
+
+    it('allows filtering by less than', async () => {
+      let response = await getEntries(token, {
+        account_id: account.id,
+        date_lt: '2018-01-03 12:01:01'
+      })
+
+      response.payload.length.should.eq(3)
+    })
+
+    it('allows filtering by greater than and less than', async () => {
+      let response = await getEntries(token, {
+        account_id: account.id,
+        date_gt: '2018-01-03 12:01:01',
+        date_lt: '2018-01-05 12:01:01'
+      })
+
+      response.payload.length.should.eq(2)
     })
   })
 
