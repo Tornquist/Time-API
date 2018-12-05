@@ -2,6 +2,8 @@ const joi = require('joi')
 const boom = require('boom')
 const Time = require('time-core')()
 
+const loader = require('../lib/loader')
+
 exports.path = '/entries'
 
 const GET_DESCRIPTION = 'Fetch Entries'
@@ -65,36 +67,25 @@ Start cannot be used when a open entry exists, and stop cannot be used when
 there is no entry to stop.
 `
 
-const START_ACTION = 'start'
-const STOP_ACTION = 'stop'
-
 const GET_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let accounts = await Time.Account.findForUser(userID)
   let accountIDs = accounts.map(a => a.id)
 
-  let searchFilters = {}
-
   if (request.query.account_id) {
     accountIDs = accountIDs.filter(a => request.query.account_id.includes(a))
   }
-  searchFilters.account_ids = accountIDs
 
-  if (request.query.category_id) {
-    searchFilters.category_ids = request.query.category_id
+  let searchFilters = {
+    account_ids: accountIDs,
+    category_ids: request.query.category_id,
+    type: request.query.type,
+    date_gt: request.query.date_gt,
+    date_lt: request.query.date_lt
   }
-
-  if (request.query.type) {
-    searchFilters.type = request.query.type
-  }
-
-  if (request.query.date_gt) {
-    searchFilters.date_gt = request.query.date_gt
-  }
-
-  if (request.query.date_lt) {
-    searchFilters.date_lt = request.query.date_lt
-  }
+  Object.keys(searchFilters).forEach(key => {
+    if (!(searchFilters[key])) { delete searchFilters[key] }
+  })
 
   let entries = await Time.Entry.findFor(searchFilters)
   let formattedEntries = entries.map(entry => ({
@@ -116,34 +107,10 @@ const GET_QUERY = joi.object().keys({
   date_lt: joi.string().isoDate()
 }).allow(null)
 
-const VALIDATE_AND_LOAD_CATEGORY = async (userID, categoryID) => {
-  const UNAUTHORIZED = new Error("Unauthorized")
-  try {
-    let category = await Time.Category.fetch(categoryID)
-    let accountID = category.account_id
-
-    let account = await Time.Account.fetch(accountID)
-
-    let userAuthorized = account.userIDs.includes(userID)
-    if (!userAuthorized) throw UNAUTHORIZED
-
-    return category
-  } catch (err) {
-    switch (err) {
-      case UNAUTHORIZED:
-        throw boom.unauthorized()
-      case Time.Error.Data.NOT_FOUND:
-        throw boom.badRequest()
-      default:
-        throw boom.badImplementation()
-    }
-  }
-}
-
 const POST_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let categoryID = request.payload.category_id
-  let category = await VALIDATE_AND_LOAD_CATEGORY(userID, categoryID)
+  let category = await loader.fetchCategory(userID, categoryID)
 
   let type = request.payload.type
   let action = request.payload.action
@@ -175,6 +142,8 @@ const POST_HANDLER = async (request, h) => {
   }
 }
 
+const START_ACTION = 'start'
+const STOP_ACTION = 'stop'
 const POST_PAYLOAD = joi.object().keys({
   category_id: joi.number().integer().required(),
   type: joi.string().valid(Object.values(Time.Type.Entry)),

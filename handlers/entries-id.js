@@ -2,6 +2,8 @@ const joi = require('joi')
 const boom = require('boom')
 const Time = require('time-core')()
 
+const loader = require('../lib/loader')
+
 exports.path = '/entries/{id}'
 
 const GET_DESCRIPTION = 'Fetch an Entry'
@@ -36,48 +38,6 @@ const DELETE_RESPONSES = {
   }
 }
 
-const VALIDATE_AND_LOAD_CATEGORY = async (userID, categoryID) => {
-  const UNAUTHORIZED = new Error("Unauthorized")
-  try {
-    let category = await Time.Category.fetch(categoryID)
-    let accountID = category.account_id
-
-    let account = await Time.Account.fetch(accountID)
-
-    let userAuthorized = account.userIDs.includes(userID)
-    if (!userAuthorized) throw UNAUTHORIZED
-
-    return category
-  } catch (err) {
-    switch (err) {
-      case UNAUTHORIZED:
-        throw boom.unauthorized()
-      case Time.Error.Data.NOT_FOUND:
-        throw boom.badRequest()
-      default:
-        throw boom.badImplementation()
-    }
-  }
-}
-
-const VALIDATE_AND_LOAD_ENTRY = async (userID, entryID) => {
-  try {
-    let entry = await Time.Entry.fetch(entryID)
-    let categoryID = entry.props.category_id
-
-    let category = await VALIDATE_AND_LOAD_CATEGORY(userID, categoryID)
-
-    return entry
-  } catch (err) {
-    switch (err) {
-      case Time.Error.Data.NOT_FOUND:
-        throw boom.badRequest()
-      default:
-        throw err
-    }
-  }
-}
-
 const FORMAT_RETURN = (entry) => ({
   id: entry.id,
   type: entry.type,
@@ -89,7 +49,7 @@ const FORMAT_RETURN = (entry) => ({
 const GET_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let entryID = request.params.id
-  let entry = await VALIDATE_AND_LOAD_ENTRY(userID, entryID)
+  let entry = await loader.fetchEntry(userID, entryID)
 
   return FORMAT_RETURN(entry)
 }
@@ -97,11 +57,11 @@ const GET_HANDLER = async (request, h) => {
 const PUT_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let entryID = request.params.id
-  let entry = await VALIDATE_AND_LOAD_ENTRY(userID, entryID)
+  let entry = await loader.fetchEntry(userID, entryID)
 
   if (request.payload.category_id) {
     let categoryID = request.payload.category_id
-    let category = await VALIDATE_AND_LOAD_CATEGORY(userID, categoryID)
+    let category = await loader.fetchCategory(userID, categoryID)
 
     entry.category = category
   }
@@ -143,7 +103,7 @@ const PUT_PAYLOAD = joi.object().keys({
 const DELETE_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let entryID = request.params.id
-  let entry = await VALIDATE_AND_LOAD_ENTRY(userID, entryID)
+  let entry = await loader.fetchEntry(userID, entryID)
   await entry.delete()
   return { success: true }
 }
