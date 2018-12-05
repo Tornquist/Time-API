@@ -3,6 +3,7 @@ const boom = require('boom')
 const Time = require('time-core')()
 
 const loader = require('../lib/loader')
+const formatter = require('../lib/formatter')
 
 exports.path = '/entries/{id}'
 
@@ -38,20 +39,12 @@ const DELETE_RESPONSES = {
   }
 }
 
-const FORMAT_RETURN = (entry) => ({
-  id: entry.id,
-  type: entry.type,
-  category_id: entry.category_id,
-  started_at: entry.startedAt,
-  ended_at: entry.endedAt
-})
-
 const GET_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
   let entryID = request.params.id
   let entry = await loader.fetchEntry(userID, entryID)
 
-  return FORMAT_RETURN(entry)
+  return formatter.entry(entry)
 }
 
 const PUT_HANDLER = async (request, h) => {
@@ -86,7 +79,7 @@ const PUT_HANDLER = async (request, h) => {
 
   await entry.save()
 
-  return FORMAT_RETURN(entry)
+  return formatter.entry(entry)
 }
 
 const PUT_PAYLOAD = joi.object().keys({

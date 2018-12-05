@@ -2,6 +2,8 @@ const joi = require('joi')
 const boom = require('boom')
 const Time = require('time-core')()
 
+const formatter = require('../lib/formatter')
+
 exports.path = '/categories/{id}'
 
 const GET_DESCRIPTION = 'Fetch a Category'
@@ -55,7 +57,7 @@ const HANDLER = async (request, h) => {
 
   switch (request.method) {
     case 'get':
-      return FORMAT_CATEGORY(category)
+      return formatter.category(category)
     case 'put':
       let validatedPayload = await VALIDATE_PUT(userID, request.payload)
       return await HANDLE_PUT(category, validatedPayload)
@@ -65,13 +67,6 @@ const HANDLER = async (request, h) => {
       return boom.badImplementation()
   }
 }
-
-const FORMAT_CATEGORY = (category) => ({
-  id: category.id,
-  parent_id: category.parent_id,
-  account_id: category.account_id,
-  name: category.name
-})
 
 const VALIDATE_PUT = async (userID, payload) => {
   let validatedPayload = Object.assign({}, payload)
@@ -106,7 +101,7 @@ const HANDLE_PUT = async (category, payload) => {
     }
   }
 
-  return FORMAT_CATEGORY(category)
+  return formatter.category(category)
 }
 
 const HANDLE_DELETE = async (category, payload) => {

@@ -3,6 +3,7 @@ const boom = require('boom')
 const Time = require('time-core')()
 
 const loader = require('../lib/loader')
+const formatter = require('../lib/formatter')
 
 exports.path = '/entries'
 
@@ -88,13 +89,7 @@ const GET_HANDLER = async (request, h) => {
   })
 
   let entries = await Time.Entry.findFor(searchFilters)
-  let formattedEntries = entries.map(entry => ({
-    id: entry.id,
-    type: entry.type,
-    category_id: entry.props.category_id,
-    started_at: entry.startedAt,
-    ended_at: entry.endedAt
-  }))
+  let formattedEntries = entries.map(entry => formatter.entry(entry))
 
   return formattedEntries
 }
@@ -125,13 +120,7 @@ const POST_HANDLER = async (request, h) => {
       entry = await Time.Entry.stopFor(category)
     }
 
-    return {
-      id: entry.id,
-      type: entry.type,
-      category_id: entry.category_id,
-      started_at: entry.startedAt,
-      ended_at: entry.endedAt
-    }
+    return formatter.entry(entry)
   } catch (err) {
     switch (err) {
       case Time.Error.Request.INVALID_ACTION:
