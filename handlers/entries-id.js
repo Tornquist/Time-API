@@ -5,7 +5,7 @@ const Time = require('time-core')()
 exports.path = '/entries/{id}'
 
 const GET_DESCRIPTION = 'Fetch an Entry'
-const PUT_DESCRIPTION = 'Update Entries'
+const PUT_DESCRIPTION = 'Update an Entry'
 const GENERAL_RESPONSES = {
   '200': {
     'description': 'Success',
@@ -23,7 +23,7 @@ const GENERAL_RESPONSES = {
   '500': { 'description': 'Server Error' }
 }
 
-const DELETE_DESCRIPTION = 'Remove Entries'
+const DELETE_DESCRIPTION = 'Remove an Entry'
 const DELETE_RESPONSES = {
   '200': {
     'description': 'Success',

@@ -5,8 +5,66 @@ const Time = require('time-core')()
 exports.path = '/entries'
 
 const GET_DESCRIPTION = 'Fetch Entries'
+const GET_RESPONSES = {
+  '200': {
+    'description': 'Success',
+    'schema': joi.array().items({
+      id: joi.number().integer(),
+      type: joi.string().valid(Object.values(Time.Type.Entry)),
+      category_id: joi.number().integer(),
+      started_at: joi.string().isoDate(),
+      ended_at: joi.string().isoDate()
+    })
+  },
+  '500': {
+    'description': 'Server Error'
+  }
+}
+const GET_NOTES = `
+By default returns all entries for all accounts that the authenticated
+user has access to.
+
+These results can be filtered using:
+
+* **category_id**: one or many category IDs
+* **account_id**: one or many account IDs
+* **type**: a single type ('event' or 'range')
+* **date_gt**: an iso opening range (inclusive). Applied against started_at
+* **date_lt**: an iso closing range (exclusive). Applied against started_at
+`
 
 const POST_DESCRIPTION = 'Create New Entries'
+const POST_RESPONSES = {
+  '200': {
+    'description': 'Success',
+    'schema': joi.object({
+      id: joi.number().integer(),
+      type: joi.string().valid(Object.values(Time.Type.Entry)),
+      category_id: joi.number().integer(),
+      started_at: joi.string().isoDate(),
+      ended_at: joi.string().isoDate()
+    })
+  },
+  '400': { 'description': 'Bad request. ex: Stopping an EVENT' },
+  '401': { 'description': 'Unauthorized action' },
+  '500': {
+    'description': 'Server Error'
+  }
+}
+const POST_NOTES = `
+This allows creating entries and closing entries. This is a top-level
+endpoint that does not require knowledge of the specific entry that will be modified.
+
+To record a EVENT entry, send just **category_id** with **type**.
+
+To record a RANGE entry, send **category_id**, **type**, and **action**.
+
+The supported actions are 'start', and 'stop'. Start will create a new entry if
+one does not exist for the given category. Stop will end the current entry.
+Start cannot be used when a open entry exists, and stop cannot be used when
+there is no entry to stop.
+`
+
 const START_ACTION = 'start'
 const STOP_ACTION = 'stop'
 
@@ -130,11 +188,15 @@ const POST_PAYLOAD = joi.object().keys({
 
 exports.get = {
   description: GET_DESCRIPTION,
+  notes: GET_NOTES,
+  plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
   handler: GET_HANDLER
 }
 
 exports.post = {
   description: POST_DESCRIPTION,
+  notes: POST_NOTES,
+  plugins: { 'hapi-swagger': { responses: POST_RESPONSES } },
   handler: POST_HANDLER,
   validate: { payload: POST_PAYLOAD }
 }
