@@ -53,7 +53,7 @@ const HANDLER = async (request, h) => {
   let categoryID = request.params.id
   let category = await Time.Category.fetch(categoryID).catch(() => { throw boom.notFound() })
 
-  await VALIDATE_ACCOUNT(category.account_id, userID)
+  await VALIDATE_ACCOUNT(category.accountID, userID)
 
   switch (request.method) {
     case 'get':
@@ -76,7 +76,7 @@ const VALIDATE_PUT = async (userID, payload) => {
 
   if (payload.parent_id) {
     let parent = await Time.Category.fetch(payload.parent_id)
-    await VALIDATE_ACCOUNT(parent.account_id, userID)
+    await VALIDATE_ACCOUNT(parent.accountID, userID)
 
     // Avoid pulling data twice
     validatedPayload.parent = parent

@@ -88,7 +88,7 @@ describe('Categories', function() {
       response.statusCode.should.eq(200)
       response.payload.length.should.eq(1)
 
-      should.equal(response.payload[0].parent_id, null)
+      should.equal(response.payload[0].parent_id, undefined)
       response.payload[0].name.should.eq("root")
       rootID = response.payload[0].id
     })

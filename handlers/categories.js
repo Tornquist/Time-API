@@ -86,11 +86,11 @@ const POST_HANDLER_REQUEST_VALIDATION = async (request, h) => {
 const POST_HANDLER = async (request, h) => {
   await POST_HANDLER_REQUEST_VALIDATION(request, h)
 
-  let account_id = request.payload.account_id
+  let accountID = request.payload.account_id
   let name = request.payload.name
-  let parent_id = request.payload.parent_id
+  let parentID = request.payload.parent_id
 
-  let category = new Time.Category({ name, account_id, parent_id })
+  let category = new Time.Category({ name, accountID, parentID })
 
   try {
     await category.save()
