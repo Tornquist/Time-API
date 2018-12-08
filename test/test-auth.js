@@ -3,6 +3,7 @@ const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const should = chai.should()
+const parallel = require('mocha.parallel')
 const querystring = require('querystring')
 
 // Initialize Time Core to seed DB as-needed
@@ -83,7 +84,7 @@ describe('Auth', function() {
 
   describe('Requesting an authentication token', () => {
 
-    describe('Rejections', () => {
+    parallel('Rejections', () => {
       it('is rejected if grant_type is missing', async () => {
         let response = await authRequest({ grant_type: null }, {})
 
@@ -157,14 +158,10 @@ describe('Auth', function() {
   })
 
   describe('Refreshing an activation token', () => {
-    describe('Rejections', () => {
+    parallel('Rejections', () => {
       let validToken;
-      before(function() {
-        this.timeout(5000)
-        return authRequest()
-        .then(_response => {
-          validToken = _response
-        })
+      before(async () => {
+        validToken = await authRequest()
       })
 
       it('is rejected if the token is invalid', async () => {
@@ -197,13 +194,10 @@ describe('Auth', function() {
 
     describe('Success', () => {
       let validToken;
-      before(function() {
-        this.timeout(5000)
-        return authRequest()
-        .then(_response => {
-          validToken = _response
-        })
+      before(async () => {
+        validToken = await authRequest()
       })
+
 
       it('returns a valid authentication token and refresh token', async () => {
         let response = await refreshRequest(validToken.payload.refresh)
@@ -237,14 +231,10 @@ describe('Auth', function() {
     })
   })
 
-  describe('Using activation tokens with secure endpoints', () => {
+  parallel('Using activation tokens with secure endpoints', () => {
     let validToken;
-    before(function() {
-      this.timeout(5000)
-      return authRequest()
-      .then(_response => {
-        validToken = _response
-      })
+    before(async () => {
+      validToken = await authRequest()
     })
 
     let genericRequest = async (headers = {}) => {

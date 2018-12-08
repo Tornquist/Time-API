@@ -3,6 +3,7 @@ const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const should = chai.should()
+const parallel = require('mocha.parallel')
 const uuid = require('uuid/v4')
 
 // Initialize Time Core to seed DB as-needed
@@ -189,7 +190,7 @@ describe('Categories', function() {
       message.should.eq('Mismatched Parent and Account IDs')
     })
 
-    describe('Filtering categories', () => {
+    parallel('Filtering categories', () => {
       let accountA, accountB, accountC, accountD;
       before(async() => {
         accountA = accountID
@@ -365,7 +366,7 @@ describe('Categories', function() {
       })
     })
 
-    describe('Validation', () => {
+    parallel('Validation', () => {
       it('rejects actions on categories that do not exist', async () => {
         let response = await server.inject({
           method: 'GET',
@@ -388,53 +389,57 @@ describe('Categories', function() {
     })
 
     describe('Basic updates', () => {
-      it('allows fetching a specific category', async () => {
-        let response = await server.inject({
-          method: 'GET',
-          url: `/categories/${a.id}`,
-          headers: { 'Authorization': `Bearer ${tokenA}` }
+      parallel('General', () => {
+        it('allows fetching a specific category', async () => {
+          let response = await server.inject({
+            method: 'GET',
+            url: `/categories/${a.id}`,
+            headers: { 'Authorization': `Bearer ${tokenA}` }
+          })
+
+          response.statusCode.should.eq(200)
+          response.payload = JSON.parse(response.payload)
+          response.payload.name.should.eq("A")
         })
 
-        response.statusCode.should.eq(200)
-        response.payload = JSON.parse(response.payload)
-        response.payload.name.should.eq("A")
+        it('rejects empty updates', async () => {
+          let response = await server.inject({
+            method: 'PUT',
+            url: `/categories/${a.id}`,
+            headers: { 'Authorization': `Bearer ${tokenA}` },
+            payload: { }
+          })
+
+          response.statusCode.should.eq(400)
+        })
       })
 
-      it('allows changing a category\'s name', async () => {
-        let name = "Alphabet"
-        let response = await server.inject({
-          method: 'PUT',
-          url: `/categories/${a.id}`,
-          headers: { 'Authorization': `Bearer ${tokenA}` },
-          payload: { name }
+      describe('Ordered', () => {
+        it('allows changing a category\'s name', async () => {
+          let name = "Alphabet"
+          let response = await server.inject({
+            method: 'PUT',
+            url: `/categories/${a.id}`,
+            headers: { 'Authorization': `Bearer ${tokenA}` },
+            payload: { name }
+          })
+
+          response.statusCode.should.eq(200)
+          response.payload = JSON.parse(response.payload)
+          response.payload.name.should.eq(name)
         })
 
-        response.statusCode.should.eq(200)
-        response.payload = JSON.parse(response.payload)
-        response.payload.name.should.eq(name)
-      })
+        it('allows fetching category updates', async () => {
+          let response = await server.inject({
+            method: 'GET',
+            url: `/categories/${a.id}`,
+            headers: { 'Authorization': `Bearer ${tokenA}` }
+          })
 
-      it('rejects empty updates', async () => {
-        let response = await server.inject({
-          method: 'PUT',
-          url: `/categories/${a.id}`,
-          headers: { 'Authorization': `Bearer ${tokenA}` },
-          payload: { }
+          response.statusCode.should.eq(200)
+          response.payload = JSON.parse(response.payload)
+          response.payload.name.should.eq("Alphabet")
         })
-
-        response.statusCode.should.eq(400)
-      })
-
-      it('allows fetching category updates', async () => {
-        let response = await server.inject({
-          method: 'GET',
-          url: `/categories/${a.id}`,
-          headers: { 'Authorization': `Bearer ${tokenA}` }
-        })
-
-        response.statusCode.should.eq(200)
-        response.payload = JSON.parse(response.payload)
-        response.payload.name.should.eq("Alphabet")
       })
     })
 

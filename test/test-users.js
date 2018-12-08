@@ -3,6 +3,8 @@ const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const should = chai.should()
+const parallel = require('mocha.parallel')
+
 const uuid = require('uuid/v4')
 const querystring = require('querystring')
 
@@ -18,73 +20,77 @@ describe('Users', function() {
   })
 
   describe('Creating a login account', () => {
-    it('rejects if email is missing', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: { password },
-        headers: {}
+    parallel('Validation checks', () => {
+      it('rejects if email is missing', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/users',
+          payload: { password },
+          headers: {}
+        })
+        response.statusCode.should.eq(400)
       })
-      response.statusCode.should.eq(400)
+
+      it('rejects if password is missing', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/users',
+          payload: { email },
+          headers: {}
+        })
+        response.statusCode.should.eq(400)
+      })
+
+      it('rejects if email is invalid', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/users',
+          payload: { email: 'notAnEmail', password },
+          headers: {}
+        })
+        response.statusCode.should.eq(400)
+      })
+
+      it('rejects if password is invalid', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/users',
+          payload: { email, password: 'not' },
+          headers: {}
+        })
+        response.statusCode.should.eq(400)
+      })
     })
 
-    it('rejects if password is missing', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: { email },
-        headers: {}
-      })
-      response.statusCode.should.eq(400)
-    })
+    describe('Valid requests', () => {
+      it('accepts with a valid email and password', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/users',
+          payload: { email, password },
+          headers: {}
+        })
+        response.statusCode.should.eq(200)
+        response.payload = JSON.parse(response.payload)
+        response.payload.id.should.be.a('number')
+        response.payload.email.should.eq(email)
 
-    it('rejects if email is invalid', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: { email: 'notAnEmail', password },
-        headers: {}
+        createdUser = response.payload
       })
-      response.statusCode.should.eq(400)
-    })
 
-    it('rejects if password is invalid', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: { email, password: 'not' },
-        headers: {}
+      it('rejects with a duplicate email', async () => {
+        let response = await server.inject({
+          method: 'POST',
+          url: '/users',
+          payload: { email, password },
+          headers: {}
+        })
+        response.statusCode.should.eq(409)
       })
-      response.statusCode.should.eq(400)
-    })
-
-    it('accepts with a valid email and password', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: { email, password },
-        headers: {}
-      })
-      response.statusCode.should.eq(200)
-      response.payload = JSON.parse(response.payload)
-      response.payload.id.should.be.a('number')
-      response.payload.email.should.eq(email)
-
-      createdUser = response.payload
-    })
-
-    it('rejects with a duplicate email', async () => {
-      let response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: { email, password },
-        headers: {}
-      })
-      response.statusCode.should.eq(409)
     })
   })
 
-  describe('Updating a login account', () => {
+  parallel('Updating a login account', () => {
     let altEmail = `${uuid()}@time.com`;
     let safeEmail = `${uuid()}@time.com`;
     let newPassword = 'new_password'

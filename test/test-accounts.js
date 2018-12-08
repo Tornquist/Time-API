@@ -3,6 +3,8 @@ const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const should = chai.should()
+const parallel = require('mocha.parallel')
+
 const uuid = require('uuid/v4')
 const querystring = require('querystring')
 
@@ -79,7 +81,7 @@ describe('Accounts', function() {
     })
   })
 
-  describe('Specific Accounts', () => {
+  parallel('Specific Accounts', () => {
     it('allows users to pull specific information about individual accounts', async () => {
       let response = await server.inject({
         method: 'GET',

@@ -3,6 +3,8 @@ const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const should = chai.should()
+const parallel = require('mocha.parallel')
+
 const uuid = require('uuid/v4')
 const querystring = require('querystring')
 const moment = require('moment')
@@ -119,7 +121,7 @@ describe('Entries', function() {
     return response
   }
 
-  describe('Fetching entries', () => {
+  parallel('Fetching entries', () => {
     before(async () => {
       await EntryHelper.createEvent(work, '2018-01-01 01:01:01')
       await EntryHelper.createEvent(work, '2018-01-02 01:01:01')
@@ -248,23 +250,26 @@ describe('Entries', function() {
   })
 
   describe('Creating', () => {
-    it('denies requests to unauthorized categories', async () => {
-      let response = await postEntries(token, {
-        category_id: rootAlt.id,
-        type: 'event'
+
+    parallel('Category validation', () => {
+      it('denies requests to unauthorized categories', async () => {
+        let response = await postEntries(token, {
+          category_id: rootAlt.id,
+          type: 'event'
+        })
+        response.statusCode.should.eq(401)
       })
-      response.statusCode.should.eq(401)
+
+      it('denies requests to categories that do not exist', async () => {
+        let response = await postEntries(token, {
+          category_id: 100000,
+          type: 'event'
+        })
+        response.statusCode.should.eq(400)
+      })
     })
 
-    it('denies requests to categories that do not exist', async () => {
-      let response = await postEntries(token, {
-        category_id: 100000,
-        type: 'event'
-      })
-      response.statusCode.should.eq(400)
-    })
-
-    describe('Events', () => {
+    parallel('Events', () => {
       it('allows creating entries', async () => {
         let response = await postEntries(token, {
           category_id: work.id,
@@ -406,7 +411,7 @@ describe('Entries', function() {
       entryAltID = response2.payload.id
     })
 
-    describe('Fetching', () => {
+    parallel('Fetching', () => {
       it('allows owned entries to be fetched', async () => {
         let response = await server.inject({
           method: 'GET',
@@ -611,7 +616,7 @@ describe('Entries', function() {
       })
     })
 
-    describe('Deleting', () => {
+    parallel('Deleting', () => {
       it('allows owned entries to be deleted', async () => {
         let response = await server.inject({
           method: 'DELETE',
