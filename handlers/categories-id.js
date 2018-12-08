@@ -2,6 +2,8 @@ const joi = require('joi')
 const boom = require('boom')
 const Time = require('time-core')()
 
+const formatter = require('../lib/formatter')
+
 exports.path = '/categories/{id}'
 
 const GET_DESCRIPTION = 'Fetch a Category'
@@ -51,11 +53,11 @@ const HANDLER = async (request, h) => {
   let categoryID = request.params.id
   let category = await Time.Category.fetch(categoryID).catch(() => { throw boom.notFound() })
 
-  await VALIDATE_ACCOUNT(category.account_id, userID)
+  await VALIDATE_ACCOUNT(category.accountID, userID)
 
   switch (request.method) {
     case 'get':
-      return FORMAT_CATEGORY(category)
+      return formatter.category(category)
     case 'put':
       let validatedPayload = await VALIDATE_PUT(userID, request.payload)
       return await HANDLE_PUT(category, validatedPayload)
@@ -66,13 +68,6 @@ const HANDLER = async (request, h) => {
   }
 }
 
-const FORMAT_CATEGORY = (category) => ({
-  id: category.id,
-  parent_id: category.parent_id,
-  account_id: category.account_id,
-  name: category.name
-})
-
 const VALIDATE_PUT = async (userID, payload) => {
   let validatedPayload = Object.assign({}, payload)
 
@@ -81,7 +76,7 @@ const VALIDATE_PUT = async (userID, payload) => {
 
   if (payload.parent_id) {
     let parent = await Time.Category.fetch(payload.parent_id)
-    await VALIDATE_ACCOUNT(parent.account_id, userID)
+    await VALIDATE_ACCOUNT(parent.accountID, userID)
 
     // Avoid pulling data twice
     validatedPayload.parent = parent
@@ -106,7 +101,7 @@ const HANDLE_PUT = async (category, payload) => {
     }
   }
 
-  return FORMAT_CATEGORY(category)
+  return formatter.category(category)
 }
 
 const HANDLE_DELETE = async (category, payload) => {

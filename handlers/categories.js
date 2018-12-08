@@ -2,6 +2,8 @@ const joi = require('joi')
 const boom = require('boom')
 const Time = require('time-core')()
 
+const formatter = require('../lib/formatter')
+
 exports.path = '/categories'
 
 const GET_DESCRIPTION = 'Fetch All Categories'
@@ -53,12 +55,7 @@ const GET_HANDLER = async (request, h) => {
 
   let categories = categoriesForAccounts.reduce((acc, cur) => acc.concat(cur), [])
 
-  return categories.map(category => ({
-    id: category.id,
-    parent_id: category.parent_id,
-    account_id: category.account_id,
-    name: category.name
-  }))
+  return categories.map(category => formatter.category(category))
 }
 
 const GET_QUERY = joi.object().keys({
@@ -89,21 +86,16 @@ const POST_HANDLER_REQUEST_VALIDATION = async (request, h) => {
 const POST_HANDLER = async (request, h) => {
   await POST_HANDLER_REQUEST_VALIDATION(request, h)
 
-  let account_id = request.payload.account_id
+  let accountID = request.payload.account_id
   let name = request.payload.name
-  let parent_id = request.payload.parent_id
+  let parentID = request.payload.parent_id
 
-  let category = new Time.Category({ name, account_id, parent_id })
+  let category = new Time.Category({ name, accountID, parentID })
 
   try {
     await category.save()
 
-    return {
-      id: category.id,
-      parent_id: category.parent_id,
-      account_id: category.account_id,
-      name: category.name
-    }
+    return formatter.category(category)
   } catch (err) {
     switch (err) {
       case Time.Error.Category.INCONSISTENT_PARENT_AND_ACCOUNT:
