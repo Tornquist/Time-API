@@ -26,7 +26,7 @@
     "inert": "^5.1.2",
     "joi": "^14.0.4",
     "require-dir": "^1.1.0",
-    "time-core": "git+https://git@github.com/Tornquist/Time-Core.git#f7dbe97",
+    "time-core": "git+https://git@github.com/Tornquist/Time-Core.git#v0.2.0",
     "vision": "^5.4.3"
   },
   "devDependencies": {
