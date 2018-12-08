@@ -32,8 +32,8 @@ These results can be filtered using:
 * **category_id**: one or many category IDs
 * **account_id**: one or many account IDs
 * **type**: a single type ('event' or 'range')
-* **date_gt**: an iso opening range (inclusive). Applied against started_at
-* **date_lt**: an iso closing range (exclusive). Applied against started_at
+* **after**: an iso opening range (inclusive). Applied against started_at
+* **before**: an iso closing range (exclusive). Applied against started_at
 `
 
 const POST_DESCRIPTION = 'Create New Entries'
@@ -81,8 +81,8 @@ const GET_HANDLER = async (request, h) => {
     account_ids: accountIDs,
     category_ids: request.query.category_id,
     type: request.query.type,
-    date_gt: request.query.date_gt,
-    date_lt: request.query.date_lt
+    after: request.query.after,
+    before: request.query.before
   }
   Object.keys(searchFilters).forEach(key => {
     if (!(searchFilters[key])) { delete searchFilters[key] }
@@ -98,8 +98,8 @@ const GET_QUERY = joi.object().keys({
   category_id: joi.array().items(joi.number().integer()).single(),
   account_id: joi.array().items(joi.number().integer()).single(),
   type: joi.string().valid(Object.values(Time.Type.Entry)),
-  date_gt: joi.string().isoDate(),
-  date_lt: joi.string().isoDate()
+  after: joi.string().isoDate(),
+  before: joi.string().isoDate()
 }).allow(null)
 
 const POST_HANDLER = async (request, h) => {

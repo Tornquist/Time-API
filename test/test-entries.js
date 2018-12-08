@@ -86,12 +86,12 @@ describe('Entries', function() {
       extensions.push(`type=${query.type}`)
     }
 
-    if (query.date_gt) {
-      extensions.push(`date_gt=${querystring.escape(query.date_gt)}`)
+    if (query.after) {
+      extensions.push(`after=${querystring.escape(query.after)}`)
     }
 
-    if (query.date_lt) {
-      extensions.push(`date_lt=${querystring.escape(query.date_lt)}`)
+    if (query.before) {
+      extensions.push(`before=${querystring.escape(query.before)}`)
     }
 
     if (extensions.length > 0) {
@@ -221,7 +221,7 @@ describe('Entries', function() {
     it('allows filtering by greater than', async () => {
       let response = await getEntries(token, {
         account_id: account.id,
-        date_gt: '2018-01-03 12:01:01'
+        after: '2018-01-03 12:01:01'
       })
 
       response.payload.length.should.eq(4)
@@ -230,7 +230,7 @@ describe('Entries', function() {
     it('allows filtering by less than', async () => {
       let response = await getEntries(token, {
         account_id: account.id,
-        date_lt: '2018-01-03 12:01:01'
+        before: '2018-01-03 12:01:01'
       })
 
       response.payload.length.should.eq(3)
@@ -239,8 +239,8 @@ describe('Entries', function() {
     it('allows filtering by greater than and less than', async () => {
       let response = await getEntries(token, {
         account_id: account.id,
-        date_gt: '2018-01-03 12:01:01',
-        date_lt: '2018-01-05 12:01:01'
+        after: '2018-01-03 12:01:01',
+        before: '2018-01-05 12:01:01'
       })
 
       response.payload.length.should.eq(2)
