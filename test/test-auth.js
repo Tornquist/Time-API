@@ -191,7 +191,8 @@ describe('Auth', function() {
         let response = await refreshRequest(validToken.payload.refresh)
 
         response.statusCode.should.eq(401)
-        response.payload.message.should.eq('Unauthorized')
+        // Used to direct re-authentication from client
+        response.payload.message.should.eq('Refresh expired')
       })
     })
 
@@ -254,6 +255,8 @@ describe('Auth', function() {
         headers: headers
       })
 
+      response.payload = JSON.parse(response.payload)
+
       return response
     }
 
@@ -261,6 +264,7 @@ describe('Auth', function() {
       let response = await genericRequest()
 
       response.statusCode.should.eq(401)
+      response.payload.message.should.eq('No valid Authorization header found')
     })
 
     it('rejects access when an invalid header is present', async () => {
@@ -269,6 +273,7 @@ describe('Auth', function() {
       })
 
       response.statusCode.should.eq(401)
+      response.payload.message.should.eq('No valid Authorization header found')
     })
 
     it('rejects access when an invalid token', async () => {
@@ -277,6 +282,7 @@ describe('Auth', function() {
       })
 
       response.statusCode.should.eq(401)
+      response.payload.message.should.eq('Unauthorized')
     })
 
     it('accepts with a valid authentication header', async () => {
@@ -285,6 +291,23 @@ describe('Auth', function() {
       })
 
       response.statusCode.should.not.eq(401)
+    })
+
+    it('rejects when the token has expired', async () => {
+      // Expire activation
+      await Time._db('token')
+        .update(
+          'access_expires_at',
+          Time._db.raw('CURRENT_TIMESTAMP - INTERVAL 1 HOUR')
+        )
+
+      let response = await genericRequest({
+        'Authorization': `Bearer ${validToken.payload.token}`
+      })
+
+      // Used to direct re-authentication from client
+      response.statusCode.should.eq(401)
+      response.payload.message.should.eq('Token expired')
     })
   })
 
