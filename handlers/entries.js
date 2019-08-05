@@ -16,7 +16,9 @@ const GET_RESPONSES = {
       type: joi.string().valid(Object.values(Time.Type.Entry)),
       category_id: joi.number().integer(),
       started_at: joi.string().isoDate(),
-      ended_at: joi.string().isoDate()
+      started_at_timezone: joi.string(),
+      ended_at: joi.string().isoDate(),
+      ended_at_timezone: joi.string()
     })
   },
   '500': {
@@ -45,7 +47,9 @@ const POST_RESPONSES = {
       type: joi.string().valid(Object.values(Time.Type.Entry)),
       category_id: joi.number().integer(),
       started_at: joi.string().isoDate(),
-      ended_at: joi.string().isoDate()
+      started_at_timezone: joi.string(),
+      ended_at: joi.string().isoDate(),
+      ended_at_timezone: joi.string()
     })
   },
   '400': { 'description': 'Bad request. ex: Stopping an EVENT' },
@@ -109,15 +113,16 @@ const POST_HANDLER = async (request, h) => {
 
   let type = request.payload.type
   let action = request.payload.action
+  let timezone = request.payload.timezone
 
   try {
     let entry;
     if (type === Time.Type.Entry.EVENT) {
-      entry = await Time.Entry.logFor(category)
+      entry = await Time.Entry.logFor(category, timezone)
     } else if (action === START_ACTION) {
-      entry = await Time.Entry.startFor(category)
+      entry = await Time.Entry.startFor(category, timezone)
     } else {
-      entry = await Time.Entry.stopFor(category)
+      entry = await Time.Entry.stopFor(category, timezone)
     }
 
     return formatter.entry(entry)
@@ -141,7 +146,8 @@ const POST_PAYLOAD = joi.object().keys({
       is: Time.Type.Entry.RANGE,
       then: joi.required(),
       otherwise: joi.forbidden()
-    })
+    }),
+  timezone: joi.string().regex(/^[a-zA-Z0-9/_\-\+]+$/)
 })
 
 exports.get = {
