@@ -120,21 +120,22 @@ describe('Entries', function() {
   }
 
   describe('Fetching entries', () => {
+    const timezone = 'America/Chicago'
     before(async () => {
-      await EntryHelper.createEvent(work, '2018-01-01 01:01:01')
-      await EntryHelper.createEvent(work, '2018-01-02 01:01:01')
-      await EntryHelper.createEvent(work, '2018-01-03 01:01:01')
-      await EntryHelper.createEvent(email, '2018-01-04 01:01:01')
-      await EntryHelper.createRange(email, '2018-01-05 01:01:01')
-      await EntryHelper.createRange(codeReview, '2018-01-06 01:01:01')
-      await EntryHelper.createRange(codeReview, '2018-01-07 01:01:01')
+      await EntryHelper.createEvent(work, { startAt: '2018-01-01 01:01:01', timezone })
+      await EntryHelper.createEvent(work, { startAt: '2018-01-02 01:01:01', timezone })
+      await EntryHelper.createEvent(work, { startAt: '2018-01-03 01:01:01', timezone })
+      await EntryHelper.createEvent(email, { startAt: '2018-01-04 01:01:01', timezone })
+      await EntryHelper.createRange(email, { startAt: '2018-01-05 01:01:01', timezone })
+      await EntryHelper.createRange(codeReview, { startAt: '2018-01-06 01:01:01', timezone })
+      await EntryHelper.createRange(codeReview, { startAt: '2018-01-07 01:01:01', timezone })
 
-      await EntryHelper.createEvent(lotsOfStuff)
-      await EntryHelper.createRange(lotsOfStuff)
-      await EntryHelper.createRange(lotsOfStuff)
+      await EntryHelper.createEvent(lotsOfStuff, { timezone })
+      await EntryHelper.createRange(lotsOfStuff, { timezone })
+      await EntryHelper.createRange(lotsOfStuff, { timezone })
 
-      await EntryHelper.createEvent(rootAlt)
-      await EntryHelper.createRange(rootAlt)
+      await EntryHelper.createEvent(rootAlt, { timezone })
+      await EntryHelper.createRange(rootAlt, { timezone })
     })
 
     it('returns entries in owned accounts by default with the correct format', async () => {
@@ -146,11 +147,14 @@ describe('Entries', function() {
         entry.type.should.be.a('string')
         entry.category_id.should.be.a('number')
         entry.started_at.should.match(TIMESTAMP_REGEX)
+        entry.started_at_timezone.should.eq(timezone)
 
         if (entry.type === 'event') {
           should.not.exist(entry.ended_at)
+          should.not.exist(entry.ended_at_timezone)
         } else {
           entry.ended_at.should.match(TIMESTAMP_REGEX)
+          entry.ended_at_timezone.should.eq(timezone)
         }
       })
     })
@@ -265,7 +269,7 @@ describe('Entries', function() {
     })
 
     describe('Events', () => {
-      it('allows creating entries', async () => {
+      it('allows creating entries without timezone information', async () => {
         let response = await postEntries(token, {
           category_id: work.id,
           type: 'event'
@@ -277,6 +281,27 @@ describe('Entries', function() {
         response.payload.category_id.should.eq(work.id)
 
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.started_at_timezone)
+
+        let timeDelta = moment().diff(moment(response.payload.started_at))
+        // Within 100ms. Allow for drift between services
+        timeDelta.should.be.lessThan(100)
+      })
+
+      it('allows creating entries with timezone information', async () => {
+        let response = await postEntries(token, {
+          category_id: work.id,
+          type: 'event',
+          timezone: 'America/Indiana/Indianapolis'
+        })
+
+        response.statusCode.should.eq(200)
+        response.payload.id.should.be.a('number')
+        response.payload.type.should.eq('event')
+        response.payload.category_id.should.eq(work.id)
+
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.started_at_timezone.should.eq('America/Indiana/Indianapolis')
 
         let timeDelta = moment().diff(moment(response.payload.started_at))
         // Within 100ms. Allow for drift between services
@@ -316,7 +341,8 @@ describe('Entries', function() {
         let response = await postEntries(token, {
           category_id: email.id,
           type: 'range',
-          action: 'start'
+          action: 'start',
+          timezone: 'America/New_York'
         })
         response.statusCode.should.eq(200)
         response.payload.id.should.be.a('number')
@@ -324,7 +350,9 @@ describe('Entries', function() {
         response.payload.category_id.should.eq(email.id)
 
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.started_at_timezone.should.eq('America/New_York')
         should.not.exist(response.payload.ended_at)
+        should.not.exist(response.payload.ended_at_timezone)
       })
 
       it('denies starting a range when one is active for the category', async () => {
@@ -340,7 +368,8 @@ describe('Entries', function() {
         let response = await postEntries(token, {
           category_id: program.id,
           type: 'range',
-          action: 'start'
+          action: 'start',
+          /*timezone*/
         })
 
         response.statusCode.should.eq(200)
@@ -349,14 +378,17 @@ describe('Entries', function() {
         response.payload.category_id.should.eq(program.id)
 
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.started_at_timezone)
         should.not.exist(response.payload.ended_at)
+        should.not.exist(response.payload.ended_at_timezone)
       })
 
       it('allows stopping a range when one is active for a category', async () => {
         let response = await postEntries(token, {
           category_id: program.id,
           type: 'range',
-          action: 'stop'
+          action: 'stop',
+          timezone: 'America/Los_Angeles'
         })
         response.statusCode.should.eq(200)
         response.payload.id.should.be.a('number')
@@ -364,14 +396,17 @@ describe('Entries', function() {
         response.payload.category_id.should.eq(program.id)
 
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        should.not.exist(response.payload.started_at_timezone) // Not set first time
         response.payload.ended_at.should.match(TIMESTAMP_REGEX)
+        response.payload.ended_at_timezone.should.eq('America/Los_Angeles')
       })
 
       it('allows stopping another active range', async () => {
         let response = await postEntries(token, {
           category_id: email.id,
           type: 'range',
-          action: 'stop'
+          action: 'stop',
+          timezone: 'America/Chicago'
         })
         response.statusCode.should.eq(200)
         response.payload.id.should.be.a('number')
@@ -379,7 +414,9 @@ describe('Entries', function() {
         response.payload.category_id.should.eq(email.id)
 
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.started_at_timezone.should.eq('America/New_York')
         response.payload.ended_at.should.match(TIMESTAMP_REGEX)
+        response.payload.ended_at_timezone.should.eq('America/Chicago')
       })
     })
   })
@@ -483,6 +520,30 @@ describe('Entries', function() {
         should.not.exist(response.payload.ended_at)
       })
 
+      it('allows changing timezone', async () => {
+        let response = await updateEntry({
+          started_at_timezone: 'America/Chicago'
+        })
+
+        response.statusCode.should.eq(200)
+
+        response.payload.id.should.eq(entryID)
+        response.payload.type.should.eq('event')
+        response.payload.category_id.should.eq(program.id)
+
+        response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.started_at_timezone.should.eq('America/Chicago')
+        should.not.exist(response.payload.ended_at)
+        should.not.exist(response.payload.ended_at_timezone)
+      })
+
+      it('rejects changing ended timezone for events', async () => {
+        let response = await updateEntry({
+          ended_at_timezone: 'America/Chicago'
+        })
+        response.statusCode.should.eq(400)
+      })
+
       it('allows moving to a category in a different owned account', async () => {
         let response = await updateEntry({
           category_id: lotsOfStuff.id
@@ -566,6 +627,16 @@ describe('Entries', function() {
         response.payload.ended_at.should.eq(newEnd)
       })
 
+      it('allows changing end timezone', async () => {
+        let newEndTimezone = 'America/New_York'
+        let response = await updateEntry({
+          ended_at_timezone: newEndTimezone
+        })
+
+        response.statusCode.should.eq(200)
+        response.payload.ended_at_timezone.should.eq(newEndTimezone)
+      })
+
       it('rejects changing ended at when the type is event', async () => {
         let response = await updateEntry({
           type: 'event',
@@ -588,18 +659,22 @@ describe('Entries', function() {
 
       it('allows changing type and ended at togther when type is range', async () => {
         let newEnd = '2018-02-03T03:03:04.234Z'
+        let newEndTimezone = 'America/Indiana/Indianapolis'
         let response = await updateEntry({
           type: 'range',
-          ended_at: newEnd
+          ended_at: newEnd,
+          ended_at_timezone: newEndTimezone
         })
 
         response.statusCode.should.eq(200)
         response.payload.type.should.eq('range')
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
+        response.payload.started_at_timezone.should.eq('America/Chicago')
         response.payload.ended_at.should.eq(newEnd)
+        response.payload.ended_at_timezone.should.eq(newEndTimezone)
       })
 
-      it('clears ended at when changing type back to event', async () => {
+      it('clears ended at data when changing type back to event', async () => {
         let response = await updateEntry({
           type: 'event',
         })
@@ -608,6 +683,7 @@ describe('Entries', function() {
         response.payload.type.should.eq('event')
         response.payload.started_at.should.match(TIMESTAMP_REGEX)
         should.not.exist(response.payload.ended_at)
+        should.not.exist(response.payload.ended_at_timezone)
       })
     })
 
