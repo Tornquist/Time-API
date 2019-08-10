@@ -17,7 +17,9 @@ const GENERAL_RESPONSES = {
       type: joi.string().valid(Object.values(Time.Type.Entry)),
       category_id: joi.number().integer(),
       started_at: joi.string().isoDate(),
-      ended_at: joi.string().isoDate()
+      started_at_timezone: joi.string(),
+      ended_at: joi.string().isoDate(),
+      ended_at_timezone: joi.string()
     })
   },
   '400': { 'description': 'Bad request' },
@@ -59,23 +61,23 @@ const PUT_HANDLER = async (request, h) => {
     entry.category = category
   }
 
-  if (request.payload.type) {
-    entry.type = request.payload.type
-  }
-
-  if (request.payload.started_at) {
-    entry.startedAt = request.payload.started_at
-  }
-
-  if (request.payload.ended_at) {
-    try {
-      entry.endedAt = request.payload.ended_at
-    } catch (err) {
-      throw (err === Time.Error.Request.INVALID_STATE)
-        ? boom.badRequest()
-        : boom.badImplementation()
+  let safeSet = (source, dest) => {
+    if (request.payload[source]) {
+      try {
+        entry[dest] = request.payload[source]
+      } catch (err) {
+        throw (err === Time.Error.Request.INVALID_STATE)
+          ? boom.badRequest()
+          : boom.badImplementation()
+      }
     }
   }
+
+  safeSet('type', 'type')
+  safeSet('started_at', 'startedAt')
+  safeSet('started_at_timezone', 'startedAtTimezone')
+  safeSet('ended_at', 'endedAt')
+  safeSet('ended_at_timezone', 'endedAtTimezone')
 
   await entry.save()
 
@@ -86,12 +88,18 @@ const PUT_PAYLOAD = joi.object().keys({
   category_id: joi.number().integer(),
   type: joi.string().valid(Object.values(Time.Type.Entry)),
   started_at: joi.string().isoDate(),
+  started_at_timezone: joi.string().regex(/^[a-zA-Z0-9/_\-\+]+$/),
   ended_at: joi.string().isoDate()
     .when('type', {
       is: Time.Type.Entry.EVENT,
       then: joi.forbidden()
+    }),
+  ended_at_timezone: joi.string().regex(/^[a-zA-Z0-9/_\-\+]+$/)
+    .when('type', {
+      is: Time.Type.Entry.EVENT,
+      then: joi.forbidden()
     })
-}).or('category_id', 'type', 'started_at', 'ended_at')
+}).or('category_id', 'type', 'started_at', 'started_at_timezone', 'ended_at', 'ended_at_timezone')
 
 const DELETE_HANDLER = async (request, h) => {
   let userID = request.auth.credentials.user_id
