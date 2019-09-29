@@ -1,8 +1,8 @@
 'use strict';
 
-const hapi = require('hapi')
-const inert = require('inert');
-const vision = require('vision');
+const hapi = require('@hapi/hapi')
+const inert = require('@hapi/inert');
+const vision = require('@hapi/vision');
 const hapiSwagger = require('hapi-swagger');
 const apiPackage = require('./package');
 

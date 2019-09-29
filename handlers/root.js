@@ -1,4 +1,4 @@
-const joi = require('joi')
+const joi = require('@hapi/joi')
 let apiPackage = require('../package.json')
 let version = apiPackage.version
 
