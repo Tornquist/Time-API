@@ -28,6 +28,8 @@ describe('Entries', function() {
 
   let userAlt, tokenAlt, accountAlt, rootAlt;
 
+  const timezone = 'America/Chicago'
+
   before(async function() {
     this.timeout(5000)
 
@@ -56,6 +58,22 @@ describe('Entries', function() {
     tokenAlt = await UserHelper.login(userAlt, server)
     accountAlt = await AccountHelper.create(userAlt.user.id)
     rootAlt = await AccountHelper.getRootCategory(accountAlt)
+
+    // Build Structure -- Shared by GET and DELETE tests
+    await EntryHelper.createEvent(work, { startAt: '2018-01-01 01:01:01', timezone })
+    await EntryHelper.createEvent(work, { startAt: '2018-01-02 01:01:01', timezone })
+    await EntryHelper.createEvent(work, { startAt: '2018-01-03 01:01:01', timezone })
+    await EntryHelper.createEvent(email, { startAt: '2018-01-04 01:01:01', timezone })
+    await EntryHelper.createRange(email, { startAt: '2018-01-05 01:01:01', timezone })
+    await EntryHelper.createRange(codeReview, { startAt: '2018-01-06 01:01:01', timezone })
+    await EntryHelper.createRange(codeReview, { startAt: '2018-01-07 01:01:01', timezone })
+
+    await EntryHelper.createEvent(lotsOfStuff, { timezone })
+    await EntryHelper.createRange(lotsOfStuff, { timezone })
+    await EntryHelper.createRange(lotsOfStuff, { timezone })
+
+    await EntryHelper.createEvent(rootAlt, { timezone })
+    await EntryHelper.createRange(rootAlt, { timezone })
   })
 
   let getEntries = async (token, query = {}) => {
@@ -94,6 +112,10 @@ describe('Entries', function() {
       extensions.push(`before=${querystring.escape(query.before)}`)
     }
 
+    if (query.deleted) {
+      extensions.push(`deleted=true`)
+    }
+
     if (extensions.length > 0) {
       let queryString = extensions.join("&")
       baseURL = baseURL + '?' + queryString
@@ -120,24 +142,6 @@ describe('Entries', function() {
   }
 
   describe('Fetching entries', () => {
-    const timezone = 'America/Chicago'
-    before(async () => {
-      await EntryHelper.createEvent(work, { startAt: '2018-01-01 01:01:01', timezone })
-      await EntryHelper.createEvent(work, { startAt: '2018-01-02 01:01:01', timezone })
-      await EntryHelper.createEvent(work, { startAt: '2018-01-03 01:01:01', timezone })
-      await EntryHelper.createEvent(email, { startAt: '2018-01-04 01:01:01', timezone })
-      await EntryHelper.createRange(email, { startAt: '2018-01-05 01:01:01', timezone })
-      await EntryHelper.createRange(codeReview, { startAt: '2018-01-06 01:01:01', timezone })
-      await EntryHelper.createRange(codeReview, { startAt: '2018-01-07 01:01:01', timezone })
-
-      await EntryHelper.createEvent(lotsOfStuff, { timezone })
-      await EntryHelper.createRange(lotsOfStuff, { timezone })
-      await EntryHelper.createRange(lotsOfStuff, { timezone })
-
-      await EntryHelper.createEvent(rootAlt, { timezone })
-      await EntryHelper.createRange(rootAlt, { timezone })
-    })
-
     it('returns entries in owned accounts by default with the correct format', async () => {
       let response = await getEntries(token)
       response.payload.length.should.eq(10)
@@ -148,6 +152,9 @@ describe('Entries', function() {
         entry.category_id.should.be.a('number')
         entry.started_at.should.match(TIMESTAMP_REGEX)
         entry.started_at_timezone.should.eq(timezone)
+
+        // Not included by default
+        should.not.exist(entry.deleted)
 
         if (entry.type === 'event') {
           should.not.exist(entry.ended_at)
@@ -688,6 +695,8 @@ describe('Entries', function() {
     })
 
     describe('Deleting', () => {
+      let activeLength = 0;
+
       it('allows owned entries to be deleted', async () => {
         let response = await server.inject({
           method: 'DELETE',
@@ -695,6 +704,41 @@ describe('Entries', function() {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         response.statusCode.should.eq(200)
+      })
+
+      it('rejects deleted entries when fetched directly', async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/entries/${entryID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(400)
+      })
+
+      it('does not return deleted entries in default searches', async () => {
+        let response = await getEntries(token, {
+          account_id: account.id
+        })
+        response.statusCode.should.eq(200)
+        response.payload.forEach(entry => {
+          should.not.exist(entry.deleted)
+        })
+
+        activeLength = response.payload.length
+      })
+
+      it('returns deleted entries when requested', async () => {
+        let response = await getEntries(token, {
+          account_id: account.id,
+          deleted: true
+        })
+        response.statusCode.should.eq(200)
+
+        response.payload.forEach(entry => {
+          should.exist(entry.deleted)
+        })
+
+        response.payload.length.should.eq(activeLength + 1)
       })
 
       it('rejects deleting entries for other accounts', async () => {
