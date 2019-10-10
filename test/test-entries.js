@@ -64,9 +64,9 @@ describe('Entries', function() {
     await EntryHelper.createEvent(work, { startAt: '2018-01-02 01:01:01', timezone })
     await EntryHelper.createEvent(work, { startAt: '2018-01-03 01:01:01', timezone })
     await EntryHelper.createEvent(email, { startAt: '2018-01-04 01:01:01', timezone })
-    await EntryHelper.createRange(email, { startAt: '2018-01-05 01:01:01', timezone })
+    await EntryHelper.createRange(email, { startAt: '2018-01-05 01:01:01', endAt: '2018-02-03 01:01:01', timezone, closed: false })
     await EntryHelper.createRange(codeReview, { startAt: '2018-01-06 01:01:01', timezone })
-    await EntryHelper.createRange(codeReview, { startAt: '2018-01-07 01:01:01', timezone })
+    await EntryHelper.createRange(codeReview, { startAt: '2018-01-07 01:01:01', endAt: '2018-02-07 01:01:01', timezone, closed: false })
 
     await EntryHelper.createEvent(lotsOfStuff, { timezone })
     await EntryHelper.createRange(lotsOfStuff, { timezone })
@@ -114,6 +114,10 @@ describe('Entries', function() {
 
     if (query.deleted) {
       extensions.push(`deleted=true`)
+    }
+
+    if (query.reference) {
+      extensions.push(`reference=${query.reference}`)
     }
 
     if (extensions.length > 0) {
@@ -252,6 +256,17 @@ describe('Entries', function() {
         account_id: account.id,
         after: '2018-01-03 12:01:01',
         before: '2018-01-05 12:01:01'
+      })
+
+      response.payload.length.should.eq(2)
+    })
+
+    it('allows filtering with an explicit reference', async () => {
+      let response = await getEntries(token, {
+        account_id: account.id,
+        after: '2018-02-01 01:01:01',
+        before: '2018-03-01 01:01:01',
+        reference: 'end'
       })
 
       response.payload.length.should.eq(2)

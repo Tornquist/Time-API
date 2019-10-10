@@ -35,8 +35,9 @@ These results can be filtered using:
 * **category_id**: one or many category IDs
 * **account_id**: one or many account IDs
 * **type**: a single type ('event' or 'range')
-* **after**: an iso opening range (inclusive). Applied against started_at
-* **before**: an iso closing range (exclusive). Applied against started_at
+* **after**: an iso opening range (inclusive).
+* **before**: an iso closing range (exclusive).
+* **reference**: Field after and before are compared against.
 * **deleted**: boolean including current status. Only included when requested
 `
 
@@ -89,6 +90,7 @@ const GET_HANDLER = async (request, h) => {
     type: request.query.type,
     after: request.query.after,
     before: request.query.before,
+    reference: request.query.reference,
     deleted: request.query.deleted
   }
   Object.keys(searchFilters).forEach(key => {
@@ -109,6 +111,7 @@ const GET_QUERY = joi.object().keys({
   type: joi.string().valid(Object.values(Time.Type.Entry)),
   after: joi.string().isoDate(),
   before: joi.string().isoDate(),
+  reference: joi.string().valid('start', 'end', 'update').default('start'),
   deleted: joi.boolean()
 }).allow(null)
 
