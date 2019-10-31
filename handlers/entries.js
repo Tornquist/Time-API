@@ -1,5 +1,5 @@
-const joi = require('joi')
-const boom = require('boom')
+const joi = require('@hapi/joi')
+const boom = require('@hapi/boom')
 const Time = require('time-core')()
 
 const loader = require('../lib/loader')
@@ -18,7 +18,8 @@ const GET_RESPONSES = {
       started_at: joi.string().isoDate(),
       started_at_timezone: joi.string(),
       ended_at: joi.string().isoDate(),
-      ended_at_timezone: joi.string()
+      ended_at_timezone: joi.string(),
+      deleted: joi.boolean()
     })
   },
   '500': {
@@ -34,8 +35,10 @@ These results can be filtered using:
 * **category_id**: one or many category IDs
 * **account_id**: one or many account IDs
 * **type**: a single type ('event' or 'range')
-* **after**: an iso opening range (inclusive). Applied against started_at
-* **before**: an iso closing range (exclusive). Applied against started_at
+* **after**: an iso opening range (inclusive).
+* **before**: an iso closing range (exclusive).
+* **reference**: Field after and before are compared against.
+* **deleted**: boolean including current status. Only included when requested
 `
 
 const POST_DESCRIPTION = 'Create New Entries'
@@ -86,14 +89,18 @@ const GET_HANDLER = async (request, h) => {
     category_ids: request.query.category_id,
     type: request.query.type,
     after: request.query.after,
-    before: request.query.before
+    before: request.query.before,
+    reference: request.query.reference,
+    deleted: request.query.deleted
   }
   Object.keys(searchFilters).forEach(key => {
     if (!(searchFilters[key])) { delete searchFilters[key] }
   })
 
+  let showDeleted = searchFilters.deleted === true
+
   let entries = await Time.Entry.findFor(searchFilters)
-  let formattedEntries = entries.map(entry => formatter.entry(entry))
+  let formattedEntries = entries.map(entry => formatter.entry(entry, showDeleted))
 
   return formattedEntries
 }
@@ -103,7 +110,9 @@ const GET_QUERY = joi.object().keys({
   account_id: joi.array().items(joi.number().integer()).single(),
   type: joi.string().valid(Object.values(Time.Type.Entry)),
   after: joi.string().isoDate(),
-  before: joi.string().isoDate()
+  before: joi.string().isoDate(),
+  reference: joi.string().valid('start', 'end', 'update').default('start'),
+  deleted: joi.boolean()
 }).allow(null)
 
 const POST_HANDLER = async (request, h) => {
@@ -154,7 +163,8 @@ exports.get = {
   description: GET_DESCRIPTION,
   notes: GET_NOTES,
   plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
-  handler: GET_HANDLER
+  handler: GET_HANDLER,
+  validate: { query: GET_QUERY }
 }
 
 exports.post = {
