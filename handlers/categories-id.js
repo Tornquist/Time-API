@@ -123,7 +123,7 @@ const DELETE_PAYLOAD = joi.object().keys({
 exports.get = {
   description: GET_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() }
+    params: joi.object({ id: joi.number().integer() })
   },
   plugins: { 'hapi-swagger': { responses: GENERAL_RESPONSES } },
   handler: HANDLER
@@ -132,7 +132,7 @@ exports.get = {
 exports.put = {
   description: PUT_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() },
+    params: joi.object({ id: joi.number().integer() }),
     payload: PUT_PAYLOAD
   },
   plugins: { 'hapi-swagger': { responses: GENERAL_RESPONSES } },
@@ -142,7 +142,7 @@ exports.put = {
 exports.delete = {
   description: DELETE_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() },
+    params: joi.object({ id: joi.number().integer() }),
     payload: DELETE_PAYLOAD
   },
   plugins: { 'hapi-swagger': { responses: DELETE_RESPONSES } },

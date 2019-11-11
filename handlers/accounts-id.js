@@ -45,7 +45,7 @@ const GET_HANDLER = async (request, h) => {
 exports.get = {
   description: GET_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() }
+    params: joi.object({ id: joi.number().integer() })
   },
   plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
   handler: GET_HANDLER

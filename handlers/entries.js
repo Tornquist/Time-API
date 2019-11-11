@@ -13,7 +13,7 @@ const GET_RESPONSES = {
     'description': 'Success',
     'schema': joi.array().items({
       id: joi.number().integer(),
-      type: joi.string().valid(Object.values(Time.Type.Entry)),
+      type: joi.string().valid(...Object.values(Time.Type.Entry)),
       category_id: joi.number().integer(),
       started_at: joi.string().isoDate(),
       started_at_timezone: joi.string(),
@@ -47,7 +47,7 @@ const POST_RESPONSES = {
     'description': 'Success',
     'schema': joi.object({
       id: joi.number().integer(),
-      type: joi.string().valid(Object.values(Time.Type.Entry)),
+      type: joi.string().valid(...Object.values(Time.Type.Entry)),
       category_id: joi.number().integer(),
       started_at: joi.string().isoDate(),
       started_at_timezone: joi.string(),
@@ -108,7 +108,7 @@ const GET_HANDLER = async (request, h) => {
 const GET_QUERY = joi.object().keys({
   category_id: joi.array().items(joi.number().integer()).single(),
   account_id: joi.array().items(joi.number().integer()).single(),
-  type: joi.string().valid(Object.values(Time.Type.Entry)),
+  type: joi.string().valid(...Object.values(Time.Type.Entry)),
   after: joi.string().isoDate(),
   before: joi.string().isoDate(),
   reference: joi.string().valid('start', 'end', 'update').default('start'),
@@ -149,7 +149,7 @@ const START_ACTION = 'start'
 const STOP_ACTION = 'stop'
 const POST_PAYLOAD = joi.object().keys({
   category_id: joi.number().integer().required(),
-  type: joi.string().valid(Object.values(Time.Type.Entry)),
+  type: joi.string().valid(...Object.values(Time.Type.Entry)),
   action: joi.string().valid(START_ACTION, STOP_ACTION)
     .when('type', {
       is: Time.Type.Entry.RANGE,
