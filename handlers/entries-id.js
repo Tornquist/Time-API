@@ -14,7 +14,7 @@ const GENERAL_RESPONSES = {
     'description': 'Success',
     'schema': joi.object({
       id: joi.number().integer(),
-      type: joi.string().valid(Object.values(Time.Type.Entry)),
+      type: joi.string().valid(...Object.values(Time.Type.Entry)),
       category_id: joi.number().integer(),
       started_at: joi.string().isoDate(),
       started_at_timezone: joi.string(),
@@ -86,7 +86,7 @@ const PUT_HANDLER = async (request, h) => {
 
 const PUT_PAYLOAD = joi.object().keys({
   category_id: joi.number().integer(),
-  type: joi.string().valid(Object.values(Time.Type.Entry)),
+  type: joi.string().valid(...Object.values(Time.Type.Entry)),
   started_at: joi.string().isoDate(),
   started_at_timezone: joi.string().regex(/^[a-zA-Z0-9/_\-\+]+$/),
   ended_at: joi.string().isoDate()
@@ -112,7 +112,7 @@ const DELETE_HANDLER = async (request, h) => {
 exports.get = {
   description: GET_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() }
+    params: joi.object({ id: joi.number().integer() })
   },
   plugins: { 'hapi-swagger': { responses: GENERAL_RESPONSES } },
   handler: GET_HANDLER
@@ -121,7 +121,7 @@ exports.get = {
 exports.put = {
   description: PUT_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() },
+    params: joi.object({ id: joi.number().integer() }),
     payload: PUT_PAYLOAD
   },
   plugins: { 'hapi-swagger': { responses: GENERAL_RESPONSES } },
@@ -131,7 +131,7 @@ exports.put = {
 exports.delete = {
   description: DELETE_DESCRIPTION,
   validate: {
-    params: { id: joi.number().integer() }
+    params: joi.object({ id: joi.number().integer() })
   },
   plugins: { 'hapi-swagger': { responses: DELETE_RESPONSES } },
   handler: DELETE_HANDLER

@@ -22,12 +22,12 @@
     "@hapi/boom": "^7.4.10",
     "@hapi/hapi": "^18.4.0",
     "@hapi/inert": "^5.2.2",
-    "@hapi/joi": "^15.1.1",
+    "@hapi/joi": "^16.1.7",
     "@hapi/vision": "^5.4.4",
     "dotenv": "^8.1.0",
-    "hapi-swagger": "^10.1.2",
+    "hapi-swagger": "^11.0.0",
     "require-dir": "^1.2.0",
-    "time-core": "git+https://git@github.com/Tornquist/Time-Core.git#v0.5.1"
+    "time-core": "git+https://git@github.com/Tornquist/Time-Core.git#v0.5.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",

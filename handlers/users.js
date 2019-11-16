@@ -108,6 +108,6 @@ exports.put = {
   handler: HANDLER,
   validate: {
     payload: PUT_PAYLOAD,
-    params: { id: joi.number().integer().required() }
+    params: joi.object({ id: joi.number().integer().required() })
   }
 }
