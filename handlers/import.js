@@ -15,25 +15,28 @@ const POST_RESPONSES = {
 }
 
 const POST_HANDLER = async (request, h) => {
-  return { status: 'ok', version }
+  return { received: "YES" }
 }
 
-const POST_PAYLOAD = joi.array().items(
-  joi.object().keys({
-    name: joi.string().required(),
-    events: joi.array().items(joi.object({
-      started_at: joi.string().isoDate().required(),
-      started_at_timezone: joi.string().required()
-    })),
-    ranges: joi.array().items(joi.object({
-      started_at: joi.string().isoDate().required(),
-      started_at_timezone: joi.string().required(),
-      ended_at: joi.string().isoDate().required(),
-      ended_at_timezone: joi.string().required()
-    })),
-    children: joi.array().items(joi.link('#tree'))
-  }).id("tree")
-)
+const POST_PAYLOAD = joi.object().keys({
+  groups: joi.array().items(
+    joi.object().keys({
+      name: joi.string().required(),
+      events: joi.array().items(joi.object({
+        started_at: joi.string().isoDate().required(),
+        started_at_timezone: joi.string().required()
+      })),
+      ranges: joi.array().items(joi.object({
+        started_at: joi.string().isoDate().required(),
+        started_at_timezone: joi.string().required(),
+        ended_at: joi.string().isoDate().required(),
+        ended_at_timezone: joi.string().required()
+      })),
+      children: joi.array().items(joi.link('#tree'))
+    }).id("tree")
+  )
+})
+
 
 exports.post = {
   description: POST_DESCRIPTION,
