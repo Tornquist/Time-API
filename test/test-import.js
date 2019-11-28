@@ -19,6 +19,8 @@ const EntryHelper = require('./helpers/entry')
 // Test Data
 const importData = require('./data/import.json')
 
+const sleep = (ms) => (new Promise(resolve => setTimeout(resolve, ms)))
+
 describe('Import', function() {
   let server;
 
@@ -52,6 +54,10 @@ describe('Import', function() {
 	    response.payload.categories.should.eq(9)
 	    response.payload.events.should.eq(0)
 	    response.payload.ranges.should.eq(138)
-  	})
+
+      console.log("Now sleeping for 2s for async importing")
+      await sleep(2000)
+      console.log("Done sleeping")
+  	}).timeout(10000)
   })
 })

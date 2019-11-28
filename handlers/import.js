@@ -44,6 +44,77 @@ const countAll = (group) => {
   }
 }
 
+const performRequestedActions = async (userID, requestID, tree) => {
+  try {
+    let account = new Time.Account()
+    account.register(userID) // TODO: Allow delayed registration on success only
+    await account.save()
+
+    console.log("Created account", account.id)
+    
+    let sequentiallyCreateCategories = async (parent, tree) => {
+      if (tree.name.length === 0) {
+        console.log("Empty root, attaching children to root")
+        for (let i = 0; i < tree.children.length; i++) {
+          let child = tree.children[i]
+          await sequentiallyCreateCategories(undefined, child)
+        }
+        return
+      }
+      
+      let category = new Time.Category({
+        name: tree.name,
+        accountID: account.id,
+        parentID: parent
+      })
+      await category.save()
+      console.log("Created category", tree.name, "with id", category.id)
+      tree.category_id = category.id
+
+      for (let i = 0; i < tree.children.length; i++) {
+        let child = tree.children[i]
+        await sequentiallyCreateCategories(category.id, child)
+      }
+    }
+    await sequentiallyCreateCategories(undefined, tree)
+
+    let allEvents = []
+    let unwrapEvents = (tree) => {
+      if (tree.category_id !== undefined) {
+        let expand = (e) => Object.assign({}, e, { category_id: tree.category_id })
+        allEvents.push(...(tree.events.map(expand)))
+        allEvents.push(...(tree.ranges.map(expand)))
+      }
+      tree.children.forEach(unwrapEvents)
+    }
+    unwrapEvents(tree)
+    
+    for (let i = 0; i < allEvents.length; i++) {
+      if (i % 10 === 0) {
+        console.log(`${i}/${allEvents.length}`)
+      }
+
+      let data = allEvents[i]
+      let isEvent = data.ended_at === undefined
+
+      let entry = new Time.Entry()
+      entry.category = data.category_id
+      entry.type = isEvent ? Time.Type.Entry.EVENT : Time.Type.Entry.RANGE
+      entry.startedAt = data.started_at
+      entry.startedAtTimezone = data.started_at_timezone
+      if (!isEvent) {
+        entry.endedAt = data.ended_at
+        entry.endedAtTimezone = data.ended_at_timezone
+      }
+      await entry.save()
+    }
+
+  } catch (err) {
+    // Mark request as failed
+    console.log("Failure in importing data", err)
+  }
+}
+
 const POST_HANDLER = async (request, h) => {
   let tree = request.payload
 
@@ -53,12 +124,17 @@ const POST_HANDLER = async (request, h) => {
   }
 
   let createRootCategory = tree.name.length !== 0
-  let completeRequest = countAll(tree)
-  if (!createRootCategory) { completeRequest.categories-- }
+  let responseData = countAll(tree)
+  if (!createRootCategory) { responseData.categories-- }
 
-  // Inject ID to track status
-  completeRequest.id = 15 // TODO: Real ID
-  return completeRequest
+  // Register request to track status
+  let registeredRequest = { id: 15 } // TODO: Real ID
+  responseData.id = registeredRequest.id
+
+  let userID = request.auth.credentials.user_id
+  performRequestedActions(userID, registeredRequest.id, tree) // Unbound
+
+  return responseData
 }
 
 const POST_PAYLOAD = joi.object().keys({
