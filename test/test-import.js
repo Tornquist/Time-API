@@ -50,10 +50,21 @@ describe('Import', function() {
 	    })
 	    response.payload = JSON.parse(response.payload)
 
-	    response.payload.id.should.be.a('number')
-	    response.payload.categories.should.eq(9)
-	    response.payload.events.should.eq(0)
-	    response.payload.ranges.should.eq(138)
+      let res = response.payload
+
+      res.id.should.be.a('number')
+      res.created_at.should.be.a('string')
+      
+      res.categories.should.be.an('object')
+      res.categories.imported.should.be.a('number')
+      res.categories.expected.should.eq(9)
+
+      res.entries.should.be.an('object')
+      res.entries.imported.should.be.a('number')
+      res.entries.expected.should.eq(138)
+
+      res.complete.should.be.a('boolean')
+      res.success.should.be.a('boolean')
 
       console.log("Now sleeping for 2s for async importing")
       await sleep(2000)
