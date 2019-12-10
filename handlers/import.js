@@ -23,6 +23,23 @@ const GENERAL_RESPONSE = joi.object({
   success: joi.boolean().required()
 })
 
+const GET_DESCRIPTION = 'Fetch all Import Requests'
+const GET_RESPONSES = {
+  '200': {
+    'description': 'Success',
+    'schema': joi.array().items(GENERAL_RESPONSE)
+  },
+  '500': { 'description': 'Server Error' }
+}
+
+const GET_HANDLER = async (request, h) => {
+  let userID = request.auth.credentials.user_id
+  let importRequests = await Time.Import.findForUser(userID)
+  let formattedRequests = importRequests.map(formatter.import)
+
+  return formattedRequests
+}
+
 const POST_DESCRIPTION = 'Create a new Import Request'
 const POST_RESPONSES = {
   '200': {
@@ -50,6 +67,12 @@ const POST_HANDLER = async (request, h) => {
   }
 
   return formatter.import(importRequest)
+}
+
+exports.get = {
+  description: GET_DESCRIPTION,
+  plugins: { 'hapi-swagger': { responses: GET_RESPONSES } },
+  handler: GET_HANDLER
 }
 
 exports.post = {

@@ -106,5 +106,54 @@ describe('Import', function() {
         await checkCount()
       }
     })
+
+    it('eventually returns success when import has completed', async () => {
+      let checkStatus = async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/import/${importID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(200)
+        response.payload = JSON.parse(response.payload)
+        let payload = response.payload
+
+        if (payload.complete !== true) {
+          return null
+        }
+
+        return payload    
+      }
+
+      let notDone = true
+      let result = null
+
+      while (notDone) {
+        await sleep(10)
+        result = await checkStatus()
+
+        if (result !== null) {
+          notDone = false
+        }
+      }
+
+      result.complete.should.eq(true)
+      result.success.should.eq(true)
+      result.categories.imported.should.eq(result.categories.expected)
+      result.entries.imported.should.eq(result.entries.expected)
+    })
+
+    it('allows all requests to be fetched for a given user', async () => {
+      let response = await server.inject({
+        method: 'GET',
+        url: `/import`,
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      response.statusCode.should.eq(200)
+      response.payload = JSON.parse(response.payload)
+
+      response.payload.length.should.eq(1)
+      response.payload[0].id.should.eq(importID)
+    })
   })
 })
