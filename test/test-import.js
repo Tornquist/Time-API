@@ -18,7 +18,6 @@ const EntryHelper = require('./helpers/entry')
 
 // Test Data
 const importData = require('./data/import.json')
-
 const sleep = (ms) => (new Promise(resolve => setTimeout(resolve, ms)))
 
 describe('Import', function() {
@@ -38,37 +37,74 @@ describe('Import', function() {
 
     user = await UserHelper.create()
     token = await UserHelper.login(user, server)
-	})
+  })
 
   describe('Importing data', () => {
-  	it('allows a large batch of data to be submitted', async () => {
-  		let response = await server.inject({
-	      method: 'POST',
-	      url: '/import',
-	      headers: { 'Authorization': `Bearer ${token}` },
-	      payload: importData
-	    })
-	    response.payload = JSON.parse(response.payload)
+    
+    let importID = null;
+
+    it('allows a large batch of data to be submitted', async () => {
+      let response = await server.inject({
+        method: 'POST',
+        url: '/import',
+        headers: { 'Authorization': `Bearer ${token}` },
+        payload: importData
+      })
+      response.statusCode.should.eq(200)
+      response.payload = JSON.parse(response.payload)
 
       let res = response.payload
 
       res.id.should.be.a('number')
+      importID = res.id      
+
       res.created_at.should.be.a('string')
+      res.updated_at.should.be.a('string')
       
       res.categories.should.be.an('object')
-      res.categories.imported.should.be.a('number')
+      res.categories.imported.should.eq(0)
       res.categories.expected.should.eq(9)
 
       res.entries.should.be.an('object')
-      res.entries.imported.should.be.a('number')
+      res.entries.imported.should.eq(0)
       res.entries.expected.should.eq(138)
 
-      res.complete.should.be.a('boolean')
-      res.success.should.be.a('boolean')
+      res.complete.should.eq(false)
+      res.success.should.be.eq(false)
+    })
 
-      console.log("Now sleeping for 2s for async importing")
-      await sleep(2000)
-      console.log("Done sleeping")
-  	}).timeout(10000)
+    it('allows checking import status periodically', async () => {
+      let lastCount = null;
+
+      let checkCount = async () => {
+        let response = await server.inject({
+          method: 'GET',
+          url: `/import/${importID}`,
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        response.statusCode.should.eq(200)
+        response.payload = JSON.parse(response.payload)
+        let payload = response.payload
+
+        if (lastCount === null) {
+          payload.categories.imported.should.be.lessThan(payload.categories.expected)
+          payload.entries.imported.should.be.lessThan(payload.entries.expected)
+
+          lastCount = payload.categories.imported + payload.entries.imported
+        } else {
+          let newCount = payload.categories.imported + payload.entries.imported
+          newCount.should.be.greaterThan(lastCount)
+
+          lastCount = newCount
+        }        
+      }
+
+      await checkCount()
+
+      for (let i = 0; i < 2; i++) {
+        await sleep(30)
+        await checkCount()
+      }
+    })
   })
 })
