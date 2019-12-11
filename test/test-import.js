@@ -196,4 +196,25 @@ describe('Import', function() {
     response.payload.length.should.eq(1)
     response.payload[0].id.should.eq(importID)
   })
+
+  it('rejects requests for incorrect import IDs', async () => {
+    let response = await server.inject({
+      method: 'GET',
+      url: `/import/100000`,
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    response.statusCode.should.eq(400)
+  })
+
+  it('rejects requests for unowned objects', async () => {
+    let wrongUser = await UserHelper.create()
+    let otherToken = await UserHelper.login(wrongUser, server)
+
+    let response = await server.inject({
+      method: 'GET',
+      url: `/import/${importID}`,
+      headers: { 'Authorization': `Bearer ${otherToken}` }
+    })
+    response.statusCode.should.eq(401)
+  })
 })
