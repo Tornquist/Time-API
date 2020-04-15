@@ -19,15 +19,15 @@
   },
   "homepage": "https://github.com/Tornquist/Time-API#readme",
   "dependencies": {
-    "@hapi/boom": "^7.4.10",
-    "@hapi/hapi": "^18.4.0",
-    "@hapi/inert": "^5.2.2",
-    "@hapi/joi": "16.1.8",
-    "@hapi/vision": "^5.4.4",
+    "@hapi/boom": "^9.1.0",
+    "@hapi/hapi": "^19.1.1",
+    "@hapi/inert": "^6.0.0",
+    "@hapi/joi": "17.1.1",
+    "@hapi/vision": "^6.0.0",
     "dotenv": "^8.1.0",
-    "hapi-swagger": "^11.0.0",
+    "hapi-swagger": "^13.0.0",
     "require-dir": "^1.2.0",
-    "time-core": "git+https://git@github.com/Tornquist/Time-Core.git#v0.6.0"
+    "time-core": "git+https://git@github.com/Tornquist/Time-Core.git#v0.7.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -35,7 +35,7 @@
     "coveralls": "^3.0.6",
     "mocha": "^6.2.0",
     "moment": "^2.24.0",
-    "nodemon": "^1.19.2",
+    "nodemon": "^2.0.3",
     "nyc": "^14.1.1",
     "querystring": "^0.2.0",
     "uuid": "^3.3.3"
