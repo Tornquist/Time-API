@@ -19,8 +19,7 @@ services:
     post_start:
       - command: "npm --prefix node_modules/time-core run db-up"
   db:
-    platform: linux/amd64
-    image: mysql:5.7.42-debian
+    image: bitnami/mysql:5.7.43
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootPass
@@ -30,8 +29,8 @@ services:
     ports:
       - 3307:3306
     healthcheck:
-      test: ["CMD", "mysqladmin", "--password=rootPass","ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "--user=root", "--password=rootPass","ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
     volumes:
-      - db:/var/lib/mysql
+      - db:/bitnami/mysql/data
